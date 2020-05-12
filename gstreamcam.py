@@ -46,12 +46,17 @@ def main(arguments):
     
     gstreamer = 'gst-launch-1.0.exe' if 'win' in sys.platform else 'gst-launch-1.0'
     hostname = arguments.hostname
+    v_inputs = {"webcam" : "v4l2src",
+                "decklink" : "decklinkvideosrc device-number=%d do-timestamp=true" % arguments.device,
+                "test" : "videotestsrc",
+                 "original" : "ksvideosrc device_index=%d" % arguments.device }
+    v_src = v_inputs[arguments.v_input]
     encoders = {'h264' : (b'GstRtpH264Pay' , 'x264enc', 'rtph264pay'),
                 'vp8' : (b'GstRtpVP8Pay', 'vp8enc', 'rtpvp8pay'),
                 'openh264' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay')}
     rtppay = encoders[arguments.codec][0]
     port = arguments.port
-    arglist = [gstreamer, "-v", "ksvideosrc", "device_index=%d" % arguments.camera, "!", "videoconvert", "!", "videoscale", "!", "video/x-raw,width=800,height=600", "!",
+    arglist = [gstreamer, "-v", v_src, "!", "videoconvert", "!", "videoscale", "!", "video/x-raw,width=1920,height=1080", "!",
                     encoders[arguments.codec][1],  "!", encoders[arguments.codec][2], "!", "udpsink", "host=%s" % hostname, "port=%d" % port]
     if arguments.debug:
         print("Calling gstreamer:\n"," ".join(arglist))
@@ -86,16 +91,17 @@ def main(arguments):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("hostname", help="hostname or IP address of the destination")
+    parser.add_argument("--hostname", help="hostname or IP address of the destination", default='239.230.225.255')
     parser.add_argument("--sdp", help="generates SDP file for the stream (defaults to false)", action="store_true")
     parser.add_argument("--debug", help="shows command line in use to call gstreamer", action="store_true")
     parser.add_argument("--port", "-p", help="port (defaults to 5000)", type=int, default=5000)
     parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264'], default='openh264')
-    parser.add_argument("--camera", help="Device id (defaults to 0)", type=int, default=0)
+    parser.add_argument("--device", help="Device id (defaults to 0)", type=int, default=0)
+    parser.add_argument("--v_input", help="", choices=['webcam', 'decklinkvideosrc', 'test', 'original'], default="test")
 
     args = parser.parse_args()
 
     args.hostname = socket.gethostbyname(args.hostname)
-    print("Using hostname %s using device %d" % (args.hostname, args.camera))
+    print("Using hostname %s using device %d" % (args.hostname, args.device))
 
     main(args)
