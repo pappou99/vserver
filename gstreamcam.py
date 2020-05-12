@@ -52,8 +52,8 @@ def main(arguments):
     a_pipeline = ["!", "queue", "!", "audioconvert", "!", "audioresample", "!", "queue", "!", "jackaudiosink", "connect=0", "client-name=Video%d" % arguments.device]
     a_inputs = {
                 "webcam" : ('',''),
-                "decklink" : (['decklinkaudiosrc', 'device-number=%d' % arguments.device, 'do-timestamp=true'], "%s" % a_pipeline),
-                "test" : (['audiotestsrc', 'is-live=1', 'do-timestamp=true', 'wave=1'], a_pipeline),
+                "decklink" : (['decklinkaudiosrc', 'device-number=%d' % arguments.device, 'connection=1', 'channels=8', 'do-timestamp=true'], a_pipeline),
+                "test" : (['audiotestsrc', 'is-live=1', 'do-timestamp=true', 'wave=1', '!', 'audio/x-raw,channels=8'], a_pipeline),
                 "original" : ("", "")
                 }
     a_src = a_inputs[arguments.v_input][0]
