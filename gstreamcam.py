@@ -49,7 +49,7 @@ def main(arguments):
 
 
     # define audio input in dict like {"argument" : (b"audioinput", "audiopipeline")}
-    a_pipeline = ["!", "queue", "!", "audioconvert", "!", "audioresample", "!", "queue", "!", "jackaudiosink", "connect=0", "client-name=Video%d" % arguments.device]
+    a_pipeline = ['!', 'tee', 'name=audio', "!", "queue", "!", "audioconvert", "!", "audioresample", "!", "queue", "!", "jackaudiosink", "connect=0", "client-name=Video%d" % arguments.device]
     a_inputs = {
                 "webcam" : ('',''),
                 "decklink" : (['decklinkaudiosrc', 'device-number=%d' % arguments.device, 'connection=1', 'channels=8', 'do-timestamp=true'], a_pipeline),
@@ -60,9 +60,13 @@ def main(arguments):
     # print(a_src)
     a_pip = a_inputs[arguments.v_input][1]
 
-    encoders = {'h264' : (b'GstRtpH264Pay' , 'x264enc', 'rtph264pay'),
+    encoders = {
+                'h264nosound' : (b'GstRtpH264Pay' , 'x264enc', 'rtph264pay'),
                 'vp8' : (b'GstRtpVP8Pay', 'vp8enc', 'rtpvp8pay'),
-                'openh264' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay')}
+                'openh264-nosound' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay'),
+                'openh264' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay')
+                }
+    muxer = ['mpegtsmux', 'alignment=7', 'name=mux', '!']
     rtppay = encoders[arguments.codec][0]
     port = arguments.port
     v_inputs = {
@@ -72,15 +76,21 @@ def main(arguments):
                 "original" : ["ksvideosrc", "device_index=%d" % arguments.device]
                 }
     v_src = v_inputs[arguments.v_input]
-    v_pip = ["!", "videoconvert", "!",
-                "videoscale", "!",
-                "video/x-raw,width=1920,height=1080", "!",
-                encoders[arguments.codec][1],  "!",
-                encoders[arguments.codec][2], "!",
-                "udpsink",
+    v_enc = [encoders[arguments.codec][1], '!']
+    v_pay = [encoders[arguments.codec][2], '!']
+    v_sink =    ["udpsink",
                 "host=%s" % hostname,
                 "port=%d" % port
                 ]
+    v_pip = ["!", "videoconvert", "!",
+            "videoscale", "!",
+            "video/x-raw,width=1920,height=1080", "!"
+            ]
+    v_pip.extend(v_enc)
+    v_pip.extend(muxer)
+    v_pip.extend(v_pay)
+    v_pip.extend(v_sink)
+
     arglist = [gstreamer, "-v"]
     arglist.extend(a_src)
     arglist.extend(a_pip)
@@ -112,7 +122,6 @@ def main(arguments):
     print()
     print(commandstring)
     process = Popen(arglist, stdout=PIPE)
-    # process = Popen(commandstring, shell=True)
 
     def signal_handler(signal, frame):
         process.kill()
