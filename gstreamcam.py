@@ -56,12 +56,16 @@ def main(arguments):
                     # , "audio.", "!", "fakesink"
                     # ,"audio.", "!", "audioconvert", "!",
                     # , 'audio.', '!', 'voaacenc', '!', 'mux.' # geht gut, aber nur 2 Kanäle Audio
-                    , "audio.", "!", "opusenc", "!", "mux." # geht gut, aber nur 2 Kanäle Audio
+                    , "audio.", "!", 'deinterleave', 'name=d'
+                    , 'interleave', 'channel-positions-from-input=true', 'name=i', '!', 'audioconvert', '!', "opusenc", "!", 'mux.'
+                    , 'd.src_0', '!', 'i.sink_0'
+                    # , 'd.src_1', '!', 'i.sink_1'
+                    # , 'd.src_0', '!', 'i.sink_0', 'interleave', 'name=i', '!', "opusenc", "!", "mux." # geht gut, aber nur 2 Kanäle Audio
                 ]
     a_inputs = {
                 "webcam" : ('',''),
-                "decklink" : (['decklinkaudiosrc', 'device-number=%d' % device, 'connection=1', 'channels=2', 'do-timestamp=true'], a_pipeline),
-                "test" : (['audiotestsrc', 'is-live=1', 'do-timestamp=true', '!', 'audio/x-raw,channels=2'], a_pipeline),
+                "decklink" : (['decklinkaudiosrc', 'device-number=%d' % device, 'connection=1', 'channels=8', 'do-timestamp=true'], a_pipeline),
+                "test" : (['audiotestsrc', 'is-live=1', 'do-timestamp=true', '!', 'audio/x-raw,channels=8'], a_pipeline),
                 "original" : ("", "")
                 }
     a_src = a_inputs[arguments.v_input][0]
@@ -109,8 +113,8 @@ def main(arguments):
     arglist.extend(a_pip)
     arglist.extend(v_src)
     arglist.extend(v_pip)
-    print("Argliste:")
-    print(arglist)
+    # print("Argliste:")
+    # print(arglist)
     arglist_old = [
                 gstreamer, "-v",
                 a_src, "!",
@@ -128,12 +132,12 @@ def main(arguments):
                 "host=%s" % hostname,
                 "port=%d" % port
                 ]
-    print(arglist)
+    # print(arglist)
     if arguments.debug:
         print("Calling gstreamer:\n"," ".join(arglist))
     commandstring = ' '.join(arglist)
-    print()
-    print(commandstring)
+    # print()
+    # print(commandstring)
     process = Popen(arglist, stdout=PIPE)
 
     def signal_handler(signal, frame):
