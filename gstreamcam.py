@@ -61,7 +61,7 @@ def main(arguments):
     a_inputs = {
                 "webcam" : ('',''),
                 "decklink" : (['decklinkaudiosrc', 'device-number=%d' % device, 'connection=1', 'channels=2', 'do-timestamp=true'], a_pipeline),
-                "test" : (['audiotestsrc', 'is-live=1', 'do-timestamp=true', 'wave=1', '!', 'audio/x-raw,channels=8'], a_pipeline),
+                "test" : (['audiotestsrc', 'is-live=1', 'do-timestamp=true', '!', 'audio/x-raw,channels=2'], a_pipeline),
                 "original" : ("", "")
                 }
     a_src = a_inputs[arguments.v_input][0]
