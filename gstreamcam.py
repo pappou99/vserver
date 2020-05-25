@@ -66,6 +66,7 @@ def main(arguments):
 
     a_encoder = {
                     "opus" : ["opusenc", ],
+                    'asf' : ['avenc_wmav2']
                 }
 
     a_enc_pip = a_encoder[arguments.audio]
@@ -90,12 +91,18 @@ def main(arguments):
                 'vp8' : (b'GstRtpVP8Pay', 'vp8enc', 'rtpvp8pay'),
                 'openh264-nosound' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay'),
                 'mp4' : (b'GstRTPMP2TPay', 'avenc_mpeg4', 'rtpmp2tpay'),
-                'openh264' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay')
+                'openh264' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay'),
+                'asf' : (b'', 'avenc_wmv2', 'rtpasfpay')
                 }
-    muxer = [
-            'mpegtsmux', 'alignment=7', 'name=mux', '!'
+    muxers = {
+            'h264' : ['mpegtsmux', 'alignment=7'],
+            'mp4' : ['mpegtsmux', 'alignment=7'],
+            'asf' : ['asfmux']
             # 'mp4mux', 'name=mux', '!'
-            ]
+            }
+    muxer_pip = ['name=mux', '!']
+    muxer = muxers[arguments.codec]
+    muxer.extend(muxer_pip)
     rtppay = encoders[arguments.codec][0]
     port = arguments.port
     inputs = {
@@ -183,13 +190,13 @@ def main(arguments):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--hostname", help="hostname or IP address of the destination", default='239.230.225.255')
-    parser.add_argument("--sdp", help="generates SDP file for the stream (defaults to false)", action="store_true")
-    parser.add_argument("--debug", help="shows command line in use to call gstreamer", action="store_true")
+    parser.add_argument("--sdp", help="generates SDP file for the stream (defaults to false)", action="store_true", default='true')
+    parser.add_argument("--debug", help="shows command line in use to call gstreamer", action="store_true", default="true")
     parser.add_argument("--port", "-p", help="port (defaults to 5000)", type=int, default=5000)
-    parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264', 'mp4'], default='mp4')
+    parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264', 'mp4', 'asf'], default='mp4')
     parser.add_argument("--device", help="Device id (defaults to 0)", type=int, default=0)
-    parser.add_argument("--input", help="", choices=['webcam', 'decklink', 'test', 'original'], default="decklink")
-    parser.add_argument("--audio", help="Audiocodec to choose for the stream", choices=['opus',], default='opus')
+    parser.add_argument("--input", help="", choices=['webcam', 'decklink', 'test', 'original'], default="test")
+    parser.add_argument("--audio", help="Audiocodec to choose for the stream", choices=['opus', 'asf'], default='opus')
 
     args = parser.parse_args()
 
@@ -202,3 +209,5 @@ if __name__ == "__main__":
 # avmux_psp a: mpeg4                v: x-h264 -> quicktime
 # mp4mux    a: mpeg1,4; ac3; opus   v: mpeg4; divx; x-h264; x-h265; x-mp4-part; x-av1
 # 
+# a working pipeline:
+# gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux alignment=7 name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5000
