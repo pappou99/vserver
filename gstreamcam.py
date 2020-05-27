@@ -85,14 +85,18 @@ def main(arguments):
     a_pip.extend(a_pipeline)
     a_pip.extend(a_enc_pip)
 
+    settings =  {
+#               name    :   container,      [videocodec1, videocodec2], [audiocodec1, audiocodec2], payloader,      payloader_string
+                'ts'    :   'mpegtsmux',    [['mpeg1', 'mpeg2', 'mpeg4', 'dirac', 'h246', 'h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'lpcm', 'ac3', 'dts', 'opus'], 'rtpmp2tpay', b'GstRTPMP2TPay'],
+                'nix'      :   'muxer', 
+                }
+
     encoders = {
-                'h264' : (b'GstRTPMP2TPay' , 'x264enc', 'rtpmp2tpay'),
-                'h264old' : (b'GstRtpH264Pay' , 'x264enc', 'rtph264pay'),
-                'vp8' : (b'GstRtpVP8Pay', 'vp8enc', 'rtpvp8pay'),
-                'openh264-nosound' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay'),
-                'mp4' : (b'GstRTPMP2TPay', 'avenc_mpeg4', 'rtpmp2tpay'),
-                'openh264' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay'),
-                'asf' : (b'', 'avenc_wmv2', 'rtpasfpay')
+                #name:          (rtppay_string,     payloader,      videoencoder)
+                'h264' :        (b'GstRTPMP2TPay',  'rtpmp2tpay',   'x264enc'),
+                'vp8' :         (b'GstRtpVP8Pay',   'rtpvp8pay',    'vp8enc'),
+                'mp4' :         (b'GstRTPMP2TPay',  'rtpmp2tpay',   'avenc_mpeg4'),
+                'openh264' :    (b'GstRtpH264Pay',  'rtph264pay',   'openh264enc')
                 }
     muxers = {
             'h264' : ['mpegtsmux', 'alignment=7'],
@@ -103,7 +107,7 @@ def main(arguments):
     muxer_pip = ['name=mux', '!']
     muxer = muxers[arguments.codec]
     muxer.extend(muxer_pip)
-    rtppay = encoders[arguments.codec][0]
+    rtppay_str = encoders[arguments.codec][0]
     port = arguments.port
     inputs = {
                 "webcam" : ["v4l2src"],
@@ -112,8 +116,8 @@ def main(arguments):
                 "original" : ["ksvideosrc", "device_index=%d" % device]
                 }
     v_src = inputs[arguments.input]
-    v_enc = [encoders[arguments.codec][1], '!']
-    v_pay = [encoders[arguments.codec][2], '!']
+    v_enc = [encoders[arguments.codec][2], '!']
+    v_pay = [encoders[arguments.codec][1], '!']
     v_sink =    ["udpsink",
                 "host=%s" % hostname,
                 "port=%d" % port
@@ -166,7 +170,7 @@ def main(arguments):
     signal.signal(signal.SIGINT, signal_handler)
     patternGenerated = False
     try:
-        p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay)
+        p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay_str)
         for line in process.stdout:
             pattern = p.search(line)
             if pattern and not patternGenerated:
@@ -193,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument("--sdp", help="generates SDP file for the stream (defaults to false)", action="store_true", default='true')
     parser.add_argument("--debug", help="shows command line in use to call gstreamer", action="store_true", default="true")
     parser.add_argument("--port", "-p", help="port (defaults to 5000)", type=int, default=5000)
-    parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264', 'mp4', 'asf'], default='mp4')
+    parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264', 'mp4'], default='mp4')
     parser.add_argument("--device", help="Device id (defaults to 0)", type=int, default=0)
     parser.add_argument("--input", help="", choices=['webcam', 'decklink', 'test', 'original'], default="test")
     parser.add_argument("--audio", help="Audiocodec to choose for the stream", choices=['opus', 'asf'], default='opus')
