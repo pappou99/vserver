@@ -1,4 +1,5 @@
 from subprocess import Popen, PIPE
+import multiprocessing as mp
 import re
 import argparse
 import signal
@@ -262,7 +263,11 @@ def main(arguments):
         # commandstring = ' '.join(arglist)
     # print()
     # print(commandstring)
-        call_pipe(arglist)
+        # call_pipe(arglist)
+        # mp.set_start_method('spawn')
+        process = mp.Process(target=call_pipe, args=(arglist))
+        process.start
+        process.join
         # process = Popen(arglist, stdout=PIPE)
 
         # def signal_handler(signal, frame):
