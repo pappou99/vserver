@@ -7,7 +7,43 @@ import socket
 from collections import defaultdict
 import sys
 
+hostname = '239.230.225.255'
+startport = 5000
+
 random.seed(None)
+
+def call_pipe(arglist):
+    process = Popen(arglist, stdout=PIPE)
+
+    def signal_handler(signal, frame):
+        process.kill()
+        print('Terminating child process')
+
+    signal.signal(signal.SIGINT, signal_handler)
+    patternGenerated = False
+    # try:
+    print("RTP_Payloader String in der Funktion: %s" % rtppay_str)
+    p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay_str)
+    for line in process.stdout:
+        pattern = p.search(line)
+        if pattern and not patternGenerated:
+            parameters = re.findall(rb'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', pattern.groups()[0])
+            print()
+            print('Parameter:')
+            print(parameters)
+            parammap = defaultdict(str)
+            for (_, param, value, value2) in parameters:
+                parammap[param.decode('ascii')] = value.decode('ascii') if value else value2.decode('ascii')
+                parammap['port'] = port
+
+            if len(parammap) > 0:
+                patternGenerated = True
+                # if arguments.sdp:
+                createsdp(hostname, [parammap], devicename)
+                for param,value in parammap.items():
+                    print("%s = %s" % (param, value))
+    # finally:
+        # process.wait()
 
 def createsdp(hostname, streams, device):
     params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
@@ -65,18 +101,18 @@ def cod_select(name, cod_muxer_can_mux, encoder_list):
     return coder
 
 def main(arguments):
-    
+    global rtppay_str, port, devicename
     gstreamer = 'gst-launch-1.0.exe' if 'win' in sys.platform else 'gst-launch-1.0'
     # hostname = arguments.hostname
-    hostname = '239.230.225.255'
-    startport = 5001
+    # hostname = '239.230.225.255'
+    # startport = 5000
     # device = arguments.device
     # devicename = device + 1
 
     settings =  {
                 # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
                 'Choose nothing and exit' : '',
-                'ts'    :   [['mpegtsmux'],    ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay']
+                'ts'    :   [['mpegtsmux', 'alignment=7'],    ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay']
                 }
     v_enc_list = {
                 # name    :   [ [codec1, codec1_option1, opt2, ...], [codec2, codec1_option1] ]
@@ -140,6 +176,7 @@ def main(arguments):
         payloader = settings[container][3]
         payloader.extend('!')
         rtppay_str = settings[container][4]
+        print("RTP_Payloader String: %s" % rtppay_str)
         print(possible_v_codecs)
         print(possible_a_codecs)
     
@@ -187,6 +224,8 @@ def main(arguments):
     
     for device in range(0, num_stream):
         port = startport + device
+        print("Stream %s" % str(device +1))
+        print("Port: %s" % port)
         devicename = device + 1
         v_input_params =  {
                         "Decklink card" : ["decklinkvideosrc", "device-number=%d" % device, "do-timestamp=true"],
@@ -210,7 +249,7 @@ def main(arguments):
 
         v_sink =    ["udpsink",
                     "host=%s" % hostname,
-                    "port=%d" % port#change to dynamic port
+                    "port=%d" % port
                     ]
         arglist = [gstreamer, "-v"]
         arglist.extend(a_src)
@@ -220,38 +259,39 @@ def main(arguments):
         arglist.extend(v_sink)
         if arguments.debug:
             print("Calling gstreamer:\n"," ".join(arglist))
-        commandstring = ' '.join(arglist)
+        # commandstring = ' '.join(arglist)
     # print()
     # print(commandstring)
-        process = Popen(arglist, stdout=PIPE)
+        call_pipe(arglist)
+        # process = Popen(arglist, stdout=PIPE)
 
-        def signal_handler(signal, frame):
-            process.kill()
-            print('Terminating child process')
+        # def signal_handler(signal, frame):
+        #     process.kill()
+        #     print('Terminating child process')
 
-        signal.signal(signal.SIGINT, signal_handler)
-        patternGenerated = False
-        try:
-            p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay_str)
-            for line in process.stdout:
-                pattern = p.search(line)
-                if pattern and not patternGenerated:
-                    parameters = re.findall(rb'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', pattern.groups()[0])
-                    print('Parameter:')
-                    print(parameters)
-                    parammap = defaultdict(str)
-                    for (_, param, value, value2) in parameters:
-                        parammap[param.decode('ascii')] = value.decode('ascii') if value else value2.decode('ascii')
-                        parammap['port'] = port
+        # signal.signal(signal.SIGINT, signal_handler)
+        # patternGenerated = False
+        # try:
+        #     p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay_str)
+        #     for line in process.stdout:
+        #         pattern = p.search(line)
+        #         if pattern and not patternGenerated:
+        #             parameters = re.findall(rb'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', pattern.groups()[0])
+        #             print('Parameter:')
+        #             print(parameters)
+        #             parammap = defaultdict(str)
+        #             for (_, param, value, value2) in parameters:
+        #                 parammap[param.decode('ascii')] = value.decode('ascii') if value else value2.decode('ascii')
+        #                 parammap['port'] = port
 
-                    if len(parammap) > 0:
-                        patternGenerated = True
-                        # if arguments.sdp:
-                        createsdp(hostname, [parammap], devicename)
-                        for param,value in parammap.items():
-                            print("%s = %s" % (param, value))
-        finally:
-            process.wait()
+        #             if len(parammap) > 0:
+        #                 patternGenerated = True
+        #                 # if arguments.sdp:
+        #                 createsdp(hostname, [parammap], devicename)
+        #                 for param,value in parammap.items():
+        #                     print("%s = %s" % (param, value))
+        # finally:
+        #     process.wait()
 
 
 if __name__ == "__main__":
@@ -278,4 +318,4 @@ if __name__ == "__main__":
 # 
 # a working pipeline:
 # gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux alignment=7 name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5000
-# gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux             name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5001
+# gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux alignment=7 name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5001
