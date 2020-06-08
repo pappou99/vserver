@@ -41,6 +41,28 @@ def createsdp(hostname, streams, device):
     with open('Video%d.sdp' % device,'w') as f:
         f.write('\r\n'.join(sdp))
 
+def cod_select(name, cod_muxer_can_mux, encoder_list):
+    print('\nPlease choose your %s:\n' % name)
+    num = 1
+    dictionary = {}
+    for setting in cod_muxer_can_mux:
+        if setting in encoder_list:
+            dictionary[num] = setting
+            print('%s : %s' % (num, setting))
+            num += 1
+    choice = encoder_list[dictionary[int(input())]]
+    print("Anzahl Codierer für diesen Codec: %s" % len(choice))
+    print(choice)
+    if len(choice) == 1: 
+        coder = choice[0]
+    else:
+        print('\nWhich codec to choose?\n')
+        for codec in range(len(choice)):
+            print('%d : %s' % (codec +1, choice[codec][0]))
+        coder = choice[int(input())-1]
+    # coder.extend('!')
+    print("Your choice: %s" % coder)
+    return coder
 
 def main(arguments):
     
@@ -51,68 +73,56 @@ def main(arguments):
     # device = arguments.device
     # devicename = device + 1
 
-
-    # define audio input in dict like {"argument" : (b"audioinput", "audiopipeline")}
-    # a_pipeline = [
-    #                 'audio.', "!", "queue", "!", "audioconvert", "!", "audioresample", "!", "queue", "!", "jackaudiosink", "connect=0", "client-name=Video%d" % devicename
-    #                 # , "audio.", "!", "fakesink"
-    #                 # ,"audio.", "!", "audioconvert", "!",
-    #                 # , 'audio.', '!', 'voaacenc', '!', 'mux.' # geht gut, aber nur 2 Kanäle Audio
-    #                 , "audio.", "!", 'deinterleave', 'name=d'
-    #                 , 'interleave', 'channel-positions-from-input=true', 'name=i', '!', 'audioconvert', '!', 'a_enc.'
-    #                 # , "opusenc", 'name=a_enc', "!", 'mux.'
-    #                 , 'd.src_0', '!', 'i.sink_0'
-    #                 # , 'd.src_1', '!', 'i.sink_1'
-    #                 # , 'd.src_0', '!', 'i.sink_0', 'interleave', 'name=i', '!', "opusenc", "!", "mux." # geht gut, aber nur 2 Kanäle Audio
-    #             ]
-
-    # a_encoder = {
-    #                 "opus" : ["opusenc", ],
-    #                 'asf' : ['avenc_wmav2']
-    #             }
-
-    # a_enc_pip = a_encoder[arguments.audio]
-    # a_enc_pip.extend(['name=a_enc', "!", 'mux.'])
-    # print(a_enc_pip)
-
-    # a_inputs = {
-    #             "webcam" : '',
-    #             "decklink" : ['decklinkaudiosrc', 'device-number=%d' % device, 'connection=1', 'channels=8', 'do-timestamp=true'],
-    #             "test" : ['audiotestsrc', 'is-live=1', 'do-timestamp=true', '!', 'audio/x-raw,channels=8'],
-    #             "original" : ''
-    #             }
-    # a_src = a_inputs[arguments.input]
-    # a_pip = ['!', 'tee', 'name=audio']
-    # # print(a_src)
-    # a_pip.extend(a_pipeline)
-    # a_pip.extend(a_enc_pip)
-
     settings =  {
-#               name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
+                # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
                 'Choose nothing and exit' : '',
-                'ts'    :   [['mpegtsmux'],    ['mpeg1', 'mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay']
+                'ts'    :   [['mpegtsmux'],    ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay']
                 }
-    v_encoder = {
-#               name    :   [ [codec1, codec1_option1, opt2, ...], [codec2, codec1_option1] ]
-                'mpeg1' :   [ ['avenc_mpeg1video'], ['mpeg2enc', 'format=0'] ],
-                'mpeg2' :   [ ['avenc_mpeg2video'], ['mpeg2enc'] ],
-                'mpeg4' :   [ ['avenc_mpeg4'] ],
-                'x-dirac' :   [ [''] ],
-                'x-h264'  :   [ ['avenc_h264_omx'], ['nvh264enc'], ['openh264enc'], ['vaapih264enc'], ['x264enc'] ],
-                'x-h265'  :   [ ['nvh265enc'], ['vaapih265enc'], ['x265enc'] ]
+    v_enc_list = {
+                # name    :   [ [codec1, codec1_option1, opt2, ...], [codec2, codec1_option1] ]
+                'mpeg1' :   [
+                            ['avenc_mpeg1video']
+                            , ['mpeg2enc', 'format=0'] 
+                            ],
+                'mpeg2' :   [ 
+                            ['avenc_mpeg2video']
+                            , ['mpeg2enc'] 
+                            ],
+                'mpeg4' :   [ 
+                            ['avenc_mpeg4'] 
+                            ],
+                # 'x-dirac' :   [ [''] ],
+                'x-h264'  :   [ 
+                                ['avenc_h264_omx']
+                                , ['nvh264enc']
+                                , ['openh264enc']
+                                , ['vaapih264enc']
+                                , ['x264enc'] 
+                                ],
+                'x-h265'  :   [ 
+                                ['nvh265enc']
+                                , ['vaapih265enc']
+                                , ['x265enc'] 
+                                ]
                 }
-    a_encoder = {
-                'mpeg1' : [ ['lamemp3enc'] ],
-                'mpeg2' : [ ['faac'] ],
-                'mpeg4' : [ ['faac'] ],
-                'x-lpcm' : [ [''] ],
-                'x-ac3' : [ [''] ],
-                'x-dts' : [ [''] ],
-                'x-opus' : [ ['avenc_opus'], ['opusenc'] ]
+
+    a_enc_list = {
+                'mpeg1' :   [ 
+                            ['lamemp3enc'] 
+                            ],
+                # 'mpeg2' : [ ['faac'] ],
+                # 'mpeg4' : [ ['faac'] ],
+                # 'x-lpcm' : [ [''] ],
+                # 'x-ac3' : [ [''] ],
+                # 'x-dts' : [ [''] ],
+                'x-opus' :  [ 
+                            ['avenc_opus']
+                            , ['opusenc'] 
+                            ]
                 }
     
     ind = {str(i):k for i,k in enumerate(settings.keys())}
-    print(ind)
+    print("Index list: %s" % ind)
     print('\nPlease choose your Container:\n')
     for key in ind.keys():
         print('%s : %s' % (key, ind[key]))
@@ -123,44 +133,21 @@ def main(arguments):
         quit()
     else:
         container = ind[con_choice]
-        print(container)
+        print("Container: %s" %container)
         muxer = settings[container][0]
-        videocodecs = settings[container][1]
-        audiocodecs = settings[container][2]
+        possible_v_codecs = settings[container][1]
+        possible_a_codecs = settings[container][2]
         payloader = settings[container][3]
         payloader.extend('!')
         rtppay_str = settings[container][4]
-        print(videocodecs)
-        print(audiocodecs)
+        print(possible_v_codecs)
+        print(possible_a_codecs)
     
-    print('\nPlease choose your videoformat:\n')
-    for v_form in range(len(videocodecs)):
-        print('%s : %s' % (v_form, videocodecs[v_form]))
-    v_choice = v_encoder[videocodecs[int(input())]]
-    print(len(v_choice))
-    if len(v_choice) == 1: 
-        v_enc = v_choice[0]
-    else:
-        print('\nWhich codec to choose?\n')
-        for codec in range(len(v_choice)):
-            print('%d : %s' % (codec, v_choice[codec][0]))
-        v_enc = v_choice[int(input())]
+    v_enc = cod_select("Videoformat",possible_v_codecs, v_enc_list)
     v_enc.extend('!')
-    print(v_enc)
 
-    
-    print('\nPlease choose your audioformat:\n')
-    for a_form in range(len(audiocodecs)):
-        print('%s : %s' % (a_form, audiocodecs[a_form]))
-    a_choice = a_encoder[audiocodecs[int(input())]]
-    print(len(a_choice))
-    if len(a_choice) == 1: 
-        a_enc_pip = a_choice[0]
-    else:
-        print('\nWhich codec to choose?\n')
-        for codec in range(len(a_choice)):
-            print('%d : %s' % (codec, a_choice[codec][0]))
-        a_enc_pip = a_choice[int(input())]
+    a_enc_pip = cod_select("audioformat", possible_a_codecs, a_enc_list)
+
     a_enc_pip.extend(['name=a_enc', "!", 'mux.'])
     print(a_enc_pip)
 
@@ -264,7 +251,8 @@ def main(arguments):
                         for param,value in parammap.items():
                             print("%s = %s" % (param, value))
         finally:
-            # process.wait()
+            process.wait()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
