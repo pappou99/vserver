@@ -126,104 +126,133 @@ def main(arguments):
     # startport = 5000
     # device = arguments.device
     # devicename = device + 1
-
-    settings =  {
+class SelectThe:
+    def __init__(self):
+        # print("Da werd de Methode gestartet!")
+        self.settings =  {
                 # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
                 'Choose nothing and exit' : '',
-                'ts'    :   [['mpegtsmux', 'alignment=7'],    ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay']
+                'ts'    :   [['mpegtsmux', 'muxer', {'alignment' : '7'}],    ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay']
                 }
-    v_enc_list = {
+        self.v_enc_list = {
                 # name    :   [ [codec1, codec1_option1, opt2, ...], [codec2, codec1_option1] ]
                 'mpeg1' :   [
-                            ['avenc_mpeg1video']
-                            , ['mpeg2enc', 'format=0'] 
+                            ['avenc_mpeg1video', {} ]
+                            , ['mpeg2enc', {'format' : '0'} ] 
                             ],
                 'mpeg2' :   [ 
-                            ['avenc_mpeg2video']
-                            , ['mpeg2enc'] 
+                            ['avenc_mpeg2video', {} ]
+                            , ['mpeg2enc', {} ] 
                             ],
                 'mpeg4' :   [ 
-                            ['avenc_mpeg4'] 
+                            ['avenc_mpeg4', {} ] 
                             ],
                 # 'x-dirac' :   [ [''] ],
                 'x-h264'  :   [ 
-                                ['avenc_h264_omx']
-                                , ['nvh264enc']
-                                , ['openh264enc']
-                                , ['vaapih264enc']
-                                , ['x264enc'] 
+                                ['avenc_h264_omx', {} ]
+                                , ['nvh264enc', {} ]
+                                , ['openh264enc', {} ]
+                                , ['vaapih264enc', {} ]
+                                , ['x264enc', {} ] 
                                 ],
                 'x-h265'  :   [ 
-                                ['nvh265enc']
-                                , ['vaapih265enc']
-                                , ['x265enc'] 
+                                ['nvh265enc', {} ]
+                                , ['vaapih265enc', {} ]
+                                , ['x265enc', {} ] 
                                 ]
                 }
 
-    a_enc_list = {
+        self.a_enc_list = {
                 'mpeg1' :   [ 
-                            ['lamemp3enc'] 
+                            ['lamemp3enc', {} ] 
                             ],
-                # 'mpeg2' : [ ['faac'] ],
-                # 'mpeg4' : [ ['faac'] ],
-                # 'x-lpcm' : [ [''] ],
-                # 'x-ac3' : [ [''] ],
-                # 'x-dts' : [ [''] ],
+                # 'mpeg2' : [ ['faac', {} ] ],
+                # 'mpeg4' : [ ['faac', {} ] ],
+                # 'x-lpcm' : [ ['', {} ] ],
+                # 'x-ac3' : [ ['', {} ] ],
+                # 'x-dts' : [ ['', {} ] ],
                 'x-opus' :  [ 
-                            ['avenc_opus']
-                            , ['opusenc'] 
+                            ['avenc_opus', {} ]
+                            , ['opusenc', {} ] 
                             ]
                 }
+      
+
+        ind = {str(i):k for i,k in enumerate(self.settings.keys())}
+        print("Index list: %s" % ind)
+        print('\nPlease choose your Container:\n')
+        for key in ind.keys():
+            print('%s : %s' % (key, ind[key]))
+        # my_input = input()
+        # print(7*my_input)
+        con_choice=input()
+        if con_choice == '0':
+            quit()
+        else:
+            container = ind[con_choice]
+            print("Container: %s" %container)
+            muxer = self.settings[container][0]
+            self.possible_v_codecs = self.settings[container][1]
+            self.possible_a_codecs = self.settings[container][2]
+            payloader = self.settings[container][3]
+            # payloader.extend('!')
+            rtppay_str = self.settings[container][4]
+            print("RTP_Payloader String: %s" % rtppay_str)
+            print(self.possible_v_codecs)
+            print(self.possible_a_codecs)
+
+    def Video(self):
+        v_enc = cod_select("Videoformat",self.possible_v_codecs, self.v_enc_list)
+        # v_enc.extend('!')
+        # print('Videoencoder {}'.format(v_enc))
+        return v_enc
+
+    def Audio(self):
+        a_enc_pip = cod_select("audioformat", self.possible_a_codecs, self.a_enc_list)
+        # a_enc_pip.extend([ {'name' : 'a_enc', "!", 'mux.'])
+        # print(a_enc_pip)
+        return a_enc_pip
+
+    def Number(self):
+        print('\nHow much streams to create?\nChoose a number from 1 to 8\n')
+        num_stream = int(input())
+        return num_stream
     
-    ind = {str(i):k for i,k in enumerate(settings.keys())}
-    print("Index list: %s" % ind)
-    print('\nPlease choose your Container:\n')
-    for key in ind.keys():
-        print('%s : %s' % (key, ind[key]))
-    # my_input = input()
-    # print(7*my_input)
-    con_choice=input()
-    if con_choice == '0':
-        quit()
-    else:
-        container = ind[con_choice]
-        print("Container: %s" %container)
-        muxer = settings[container][0]
-        possible_v_codecs = settings[container][1]
-        possible_a_codecs = settings[container][2]
-        payloader = settings[container][3]
-        payloader.extend('!')
-        rtppay_str = settings[container][4]
-        print("RTP_Payloader String: %s" % rtppay_str)
-        print(possible_v_codecs)
-        print(possible_a_codecs)
-    
-    v_enc = cod_select("Videoformat",possible_v_codecs, v_enc_list)
-    v_enc.extend('!')
+    def get_all_values(self, d):
+        if isinstance(d, dict):
+            for v in d.values():
+                yield from self.get_all_values(v)
+        elif isinstance(d, list):
+            for v in d:
+                yield from self.get_all_values(v)
+        else:
+            yield d
 
-    a_enc_pip = cod_select("audioformat", possible_a_codecs, a_enc_list)
-
-    a_enc_pip.extend(['name=a_enc', "!", 'mux.'])
-    print(a_enc_pip)
-
-    inputs =    {  
-                '1' : "Decklink card",
-                '2' : "Test picture and sound generator"
+    def Input(self, device):
+        v_input_list = {
+                'Decklink-Card' : [ 'decklinkvideosrc', {'device-number' : '%d' % device, 'do-timestamp' : 'true'} ],
+                'Test picture generator' : [ 'videotestsrc', {} ]
                 }
+        a_input_list = {
+                'Decklink-Card' : [ 'decklinkaudosrc', {} ],
+                'Test sound generator' : [ 'audiotestsrc', {} ]
+                }
+        possible_v_inputs = []
+        for option in v_input_list.items():
+            possible_v_inputs.append(option[0])
+        print(possible_v_inputs)
+        in_v_choice = cod_select("Video Input", possible_v_inputs, v_input_list)
+        print(in_v_choice)
 
-    print('\nHow much streams to create?\nChoose a number from 1 to 8\n')
-    num_stream = int(input())
+        possible_a_inputs = []
+        
+        return in_v_choice, in_a_choice
 
-    print('\nWhich source the video and audio comes from?\n')
-    for key in inputs.keys():
-        print('%s : %s' % (key, inputs[key]))
-    in_choice = inputs[input()]
-    print(in_choice)
 
-    a_pip = ['!', 'tee', 'name=audio']
+        a_pip = ['!', 'tee', 'name=audio']
 
-    muxer_pip = ['name=mux', '!']
-    muxer.extend(muxer_pip)
+        muxer_pip = ['name=mux', '!']
+        # muxer.extend(muxer_pip)
 
     # port = arguments.port
     
@@ -231,66 +260,71 @@ def main(arguments):
     # v_enc = [encoders[arguments.codec][2], '!']
     # v_pay = [encoders[arguments.codec][1], '!']
 
-    v_pip = ["!", "videoconvert", "!",
+    def Noting(self):    
+        v_pip = ["!", "videoconvert", "!",
             "videoscale", "!",
             "video/x-raw,width=1920,height=1080", "!"
             ]
-    v_pip.extend(v_enc)
-    v_pip.extend(muxer)
-    v_pip.extend(payloader)
+        v_pip.extend(v_enc)
+        v_pip.extend(muxer)
+        v_pip.extend(payloader)
     # v_pip.extend(v_sink)
     
-    for device in range(0, num_stream):
-        port = startport + device
-        print("Stream %s" % str(device +1))
-        print("Port: %s" % port)
-        devicename = "Video%s" % str(device + 1)
-        v_input_params =  {
+        for device in range(0, num_stream):
+            port = startport + device
+            print("Stream %s" % str(device +1))
+            print("Port: %s" % port)
+            devicename = "Video%s" % str(device + 1)
+            v_input_params =  {
                         "Decklink card" : ["decklinkvideosrc", "device-number=%d" % device, "do-timestamp=true"],
                         "Test picture and sound generator" : ["videotestsrc"]
                         }
-        v_src = Gst.ElementFactory.make(v_input_params[in_choice][0], None)
-        print("Videosource: %s" % v_src)
+            v_src = v_input_params[in_choice]
+            print("Videosource: %s" % v_src)
+            v_src_gst = Gst.ElementFactory.make(v_src[0], None)
+            if len(v_src) > 0:
+                for n in range(1,len(v_src),1):
+                    setattr(self, v_src[n], v_src_gst)
         
-        a_inputs_params =   {
+            a_inputs_params =   {
                             "Decklink card" : ['decklinkaudiosrc', 'device-number=%d' % device, 'connection=1', 'channels=8', 'do-timestamp=true'],
                             "Test picture and sound generator" : ['audiotestsrc', 'is-live=1', 'do-timestamp=true', '!', 'audio/x-raw,channels=8'],
                             }
-        a_src = a_inputs_params[in_choice]
+            a_src = a_inputs_params[in_choice]
 
-        a_pipeline = [
+            a_pipeline = [
                     'audio.', "!", "queue", "!", "audioconvert", "!", "audioresample", "!", "queue", "!", "jackaudiosink", "connect=0", "client-name=%s" % devicename
                     , "audio.", "!", 'deinterleave', 'name=d'
                     , 'interleave', 'channel-positions-from-input=true', 'name=i', '!', 'audioconvert', '!', 'a_enc.'
                     , 'd.src_0', '!', 'i.sink_0'
                 ]
-        a_pip.extend(a_pipeline)
-        a_pip.extend(a_enc_pip)
+            a_pip.extend(a_pipeline)
+            a_pip.extend(a_enc_pip)
 
-        v_sink =    ["udpsink",
+            v_sink =    ["udpsink",
                     "host=%s" % hostname,
                     "port=%d" % port
                     ]
-        arglist = []
+            arglist = []
         # arglist = [gstreamer, "-v"]
-        arglist.extend(a_src)
-        arglist.extend(a_pip)
-        arglist.extend(v_src)
-        arglist.extend(v_pip)
+            arglist.extend(a_src)
+            arglist.extend(a_pip)
+            arglist.extend(v_src)
+            arglist.extend(v_pip)
         # arglist.extend(v_sink)
         # if arguments.debug:
         #     print("Calling gstreamer:\n"," ".join(arglist))
         
-        print("Devicename: %s" % devicename)
-        commandstring = '\'( %s )\'' % ' '.join(arglist)
-        print()
+            print("Devicename: %s" % devicename)
+            commandstring = '\'( %s )\'' % ' '.join(arglist)
+            print()
         # print("Commandline: %s" % commandstring)
-        factory.set_launch(commandstring)
-        print("SET COMMANDSTRING:    %s    TO SERVER" % commandstring)
-        mounts.add_factory("/%s" %devicename, factory)
-        print("ADDED STRING FACTORY AT MOUNTPOINT: %s" % devicename)
-        server.attach(None)
-        print("ATTACHED FACTORY TO SERVER")
+            factory.set_launch(commandstring)
+            print("SET COMMANDSTRING:    %s    TO SERVER" % commandstring)
+            mounts.add_factory("/%s" %devicename, factory)
+            print("ADDED STRING FACTORY AT MOUNTPOINT: %s" % devicename)
+            server.attach(None)
+            print("ATTACHED FACTORY TO SERVER")
 
         # call_pipe(arglist)
         # mp.set_start_method('spawn')
@@ -327,7 +361,6 @@ def main(arguments):
         #                     print("%s = %s" % (param, value))
         # finally:
         #     process.wait()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
