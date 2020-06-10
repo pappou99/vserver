@@ -5,7 +5,7 @@ import gi
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
 from gi.repository import Gst, GstVideo, GLib
-from gstream_choice_inanity import SelectThe
+from gstream_choice_inanity import SelectThe, PossibleInputs
 
 
 Gst.init(None)
@@ -30,73 +30,84 @@ class Main:
         self.bus.connect('message::error', self.on_error)
 
         v_enc = select.Video()
-        print(v_enc)
+        print("Videoencoder: %s" % v_enc)
         a_enc = select.Audio()
-        print(a_enc)
+        print("Audioencoder: %s" % a_enc)
         num_stream = select.Number()
-        print(num_stream)
-        inputs = select.Input(num_stream)
-        print(inputs)
+        print("Number of Streams: %s" % num_stream)
 
+        my_in = PossibleInputs()
+        my_inputs = my_in.Define()
+        v_in = my_inputs[0]
+        print("Video : %s" % v_in)
+        a_in = my_inputs[1]
+        print("Audio: %s"  % a_in)
+        print("Next step\n")
 
-        rates = [
-            ['low', 'video/x-raw, width=640, height=360', 500, 3],
-            ['med', 'video/x-raw, width=1280, height=720', 1500, 3],
-            ['high', 'video/x-raw, width=1920, height=1080', 5000, 4]
-        ]
-
-        # Video input
-        
-        self.malm([
-            # ['decklinkvideosrc', None, {'connection': 1, 'mode': 12, 'buffer-size': 10, 'video-format': 1}],
-            ['videotestsrc', None, {}],
-            ['capsfilter', None, {'caps': 'video/x-raw, width=1920, height=1080'}],
-            ['videoconvert', None, {}],
-            ['deinterlace', None, {}],
-            ['videorate', None, {}],
-            ['capsfilter', None, {'caps': 'video/x-raw, framerate=30000/1001' }],
-            ['tee', 'vinput', {}]
-        ])
-
-        # Create each encoder, muxer, and rtmpsink.
-        for rate in rates:
+        for inp_no in range(0, num_stream, 1):
+            print(inp_no)
+            devicename = 'Video%s' % str(inp_no +1)
+            in_options = my_in.Generate(v_in, a_in, inp_no)
+            videoinput = in_options[0]
+            audioinput = in_options[1]
+            
+            # Video input
             self.malm([
-                ['queue', 'v{}'.format(rate[0]), {'max-size-bytes': 104857600}],
-                ['videoscale', None, {}],
-                ['capsfilter', None, {'caps': rate[1]}],
+                # ['decklinkvideosrc', None, {'connection': 1, 'mode': 12, 'buffer-size': 10, 'video-format': 1}],
+                videoinput,
+                ['capsfilter', None, {'caps': 'video/x-raw, width=1920, height=1080'}],
+                ['videoconvert', None, {}],
+                ['deinterlace', None, {}],
+                ['videorate', None, {}],
+                ['capsfilter', None, {'caps': 'video/x-raw, framerate=30000/1001' }],
+                ['queue', None, {'max-size-bytes': 104857600}],
                 ['x264enc', None, {
                     'speed-preset': settings.speed_preset,
                     'tune': 'zerolatency',
-                    'bitrate': rate[2],
-                    'threads': rate[3],
+                    'bitrate': 5000,
+                    'threads': 1,
                     'option-string': 'scenecut=0'
                 }],
                 ['capsfilter', None, {'caps': 'video/x-h264, profile=baseline'}],
                 ['h264parse', None, {}],
-                ['flvmux', 'm{}'.format(rate[0]), {'streamable': True}],
-                ['rtmpsink', None, {'location': settings.stream_location + rate[0]}]
+                ['flvmux', 'muxer', {'streamable': True}],
+                ['rtmpsink', None, {'location': settings.stream_location + devicename}]
             ])
 
-            self.vinput.link(getattr(self, 'v{}'.format(rate[0])))
+            # Audio source
+            self.malm([
+                # ['decklinkaudiosrc', None, {'connection': 1}],
+                audioinput,
+                ['capsfilter', None, {'caps' : 'audio/x-raw,channels=8' }],
+                ['tee', 'audio', {}]
+            ])
 
-        # Audio source / encoder
-        self.malm([
-            # ['decklinkaudiosrc', None, {'connection': 1}],
-            ['audiotestsrc', None, {'is-live': '1', 'do-timestamp' : 'true'}],
-            ['audioconvert', None, {}],
-            ['audioamplify', None, {'amplification': settings.amplification}],
-            ['avenc_aac', None, {'bitrate': 128000}],
-            ['aacparse', None, {}],
-            ['tee', 'aall', {}]
-        ])
+            # Audio encoder
+            self.malm([
+                ['audioconvert', 'encoder', {}],
+                # ['audioamplify', None, {'amplification': settings.amplification}],
+                ['avenc_aac', None, {'bitrate': 128000}],
+                ['aacparse', 'aparse', {}],
+            ])
+            self.audio.link(getattr(self, 'encoder'))
+            self.aparse.link(getattr(self, 'muxer'))
 
-        # Link audio encoder to muxers
-        for m in [self.mlow, self.mmed, self.mhigh]:
-            q = Gst.ElementFactory.make('queue')
-            self.pipeline.add(q)
-            self.aall.link(q)
-            q.link(m)
-    print()
+            self.malm([
+                ['queue', 'jack', {}],
+                ['audioconvert', None, {}],
+                ['audioresample', None, {}],
+                ['queue', None, {}],
+                ['jackaudiosink', None, { 'connect' : 0, 'client-name' : devicename }]
+            ])
+            self.audio.link(getattr(self, 'jack'))
+
+            # # Link audio encoder to muxers
+            # for m in [self.mlow, self.mmed, self.mhigh]:
+            #     q = Gst.ElementFactory.make('queue')
+            #     self.pipeline.add(q)
+            #     self.aall.link(q)
+            #     q.link(m)
+            print('Made the whole things, starting...')
 
     def run(self):
         self.pipeline.set_state(Gst.State.PLAYING)

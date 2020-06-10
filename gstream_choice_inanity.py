@@ -30,70 +30,70 @@ factory = GstRtspServer.RTSPMediaFactory()
 
 random.seed(None)
 
-def call_pipe(arglist):
-    process = Popen(arglist, stdout=PIPE)
+# def call_pipe(arglist):
+#     process = Popen(arglist, stdout=PIPE)
 
-    def signal_handler(signal, frame):
-        process.kill()
-        print('Terminating child process')
+#     def signal_handler(signal, frame):
+#         process.kill()
+#         print('Terminating child process')
 
-    signal.signal(signal.SIGINT, signal_handler)
-    patternGenerated = False
-    # try:
-    print("RTP_Payloader String in der Funktion: %s" % rtppay_str)
-    p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay_str)
-    for line in process.stdout:
-        pattern = p.search(line)
-        if pattern and not patternGenerated:
-            parameters = re.findall(rb'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', pattern.groups()[0])
-            print()
-            print('Parameter:')
-            print(parameters)
-            parammap = defaultdict(str)
-            for (_, param, value, value2) in parameters:
-                parammap[param.decode('ascii')] = value.decode('ascii') if value else value2.decode('ascii')
-                parammap['port'] = port
+#     signal.signal(signal.SIGINT, signal_handler)
+#     patternGenerated = False
+#     # try:
+#     print("RTP_Payloader String in der Funktion: %s" % rtppay_str)
+#     p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay_str)
+#     for line in process.stdout:
+#         pattern = p.search(line)
+#         if pattern and not patternGenerated:
+#             parameters = re.findall(rb'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', pattern.groups()[0])
+#             print()
+#             print('Parameter:')
+#             print(parameters)
+#             parammap = defaultdict(str)
+#             for (_, param, value, value2) in parameters:
+#                 parammap[param.decode('ascii')] = value.decode('ascii') if value else value2.decode('ascii')
+#                 parammap['port'] = port
 
-            if len(parammap) > 0:
-                patternGenerated = True
-                # if arguments.sdp:
-                createsdp(hostname, [parammap], devicename)
-                for param,value in parammap.items():
-                    print("%s = %s" % (param, value))
-    # finally:
-        # process.wait()
+#             if len(parammap) > 0:
+#                 patternGenerated = True
+#                 # if arguments.sdp:
+#                 createsdp(hostname, [parammap], devicename)
+#                 for param,value in parammap.items():
+#                     print("%s = %s" % (param, value))
+#     # finally:
+#         # process.wait()
 
-def createsdp(hostname, streams, device):
-    params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
-    sdp = ['v=0']
-    sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, hostname))
-    sdp.append('t=0 0')
-    sdp.append('s=GST2SDP')
+# def createsdp(hostname, streams, device):
+#     params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
+#     sdp = ['v=0']
+#     sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, hostname))
+#     sdp.append('t=0 0')
+#     sdp.append('s=GST2SDP')
 
-    streamnumber = 2
+#     streamnumber = 2
 
-    # add individual streams to SDP
-    for stream in streams:
-        sdp.append("m=%s %s RTP/AVP %s" % (stream['media'], stream['port'], stream['payload']))
-        sdp.append('c=IN IP4 %s' % hostname)
-        sdp.append("a=rtpmap:%s %s/%s" % (stream['payload'], stream['encoding-name'], stream['clock-rate']))
-        fmtp = ["a=fmtp:%s" % stream['payload']]
-        for param,value in stream.items():
-            # is parameter an action?
-            if param[0] == 'a' and param[1] == '-':
-                aparam = "%s:%s" % (param.replace('a-', 'a='), value)
-                sdp.append(aparam)
-            else:
-                if param not in params2ignore:
-                    fmtp.append(" %s=%s;" % (param, value))
-        fmtp = ''.join(fmtp)
-        sdp.append(fmtp)
-        sdp.append("a=control:track%d" % streamnumber)
-        streamnumber += 1
+#     # add individual streams to SDP
+#     for stream in streams:
+#         sdp.append("m=%s %s RTP/AVP %s" % (stream['media'], stream['port'], stream['payload']))
+#         sdp.append('c=IN IP4 %s' % hostname)
+#         sdp.append("a=rtpmap:%s %s/%s" % (stream['payload'], stream['encoding-name'], stream['clock-rate']))
+#         fmtp = ["a=fmtp:%s" % stream['payload']]
+#         for param,value in stream.items():
+#             # is parameter an action?
+#             if param[0] == 'a' and param[1] == '-':
+#                 aparam = "%s:%s" % (param.replace('a-', 'a='), value)
+#                 sdp.append(aparam)
+#             else:
+#                 if param not in params2ignore:
+#                     fmtp.append(" %s=%s;" % (param, value))
+#         fmtp = ''.join(fmtp)
+#         sdp.append(fmtp)
+#         sdp.append("a=control:track%d" % streamnumber)
+#         streamnumber += 1
 
-    # save sdp
-    with open('Video%d.sdp' % device,'w') as f:
-        f.write('\r\n'.join(sdp))
+#     # save sdp
+#     with open('Video%d.sdp' % device,'w') as f:
+#         f.write('\r\n'.join(sdp))
 
 def cod_select(name, cod_muxer_can_mux, encoder_list):
     print('\nPlease choose your %s:\n' % name)
@@ -105,34 +105,50 @@ def cod_select(name, cod_muxer_can_mux, encoder_list):
             print('%s : %s' % (num, setting))
             num += 1
     choice = encoder_list[dictionary[int(input())]]
-    print("Anzahl Codierer für diesen Codec: %s" % len(choice))
-    print(choice)
+    # print("\nNumber of options for this choice: %s" % len(choice))
+    # print(choice)
     if len(choice) == 1: 
         coder = choice[0]
     else:
-        print('\nWhich codec to choose?\n')
+        print("\nNumber of options for this choice: %s" % len(choice))
+        print('Which option to choose?\n')
         for codec in range(len(choice)):
             print('%d : %s' % (codec +1, choice[codec][0]))
         coder = choice[int(input())-1]
     # coder.extend('!')
-    print("Your choice: %s" % coder)
+    print("Your %s choice: %s" % (name, coder) )
     return coder
 
-def main(arguments):
-    global rtppay_str, port, devicename
-    gstreamer = 'gst-launch-1.0.exe' if 'win' in sys.platform else 'gst-launch-1.0'
-    # hostname = arguments.hostname
-    # hostname = '239.230.225.255'
-    # startport = 5000
-    # device = arguments.device
-    # devicename = device + 1
+def in_select(name, possible_inputs, input_list):
+    print('\nPlease choose your %s:\n' % name)
+    num = 1
+    dictionary = {}
+    for setting in possible_inputs:
+        if setting in input_list:
+            dictionary[num] = setting
+            print('%s : %s' % (num, setting))
+            num += 1
+    choice = dictionary[int(input())]
+    # print("\nNumber of options for this choice: %s" % len(choice))
+    print("Your %s choice: %s" % (name, choice) )
+    return choice
+
+# def main(arguments):
+#     global rtppay_str, port, devicename
+#     gstreamer = 'gst-launch-1.0.exe' if 'win' in sys.platform else 'gst-launch-1.0'
+#     # hostname = arguments.hostname
+#     # hostname = '239.230.225.255'
+#     # startport = 5000
+#     # device = arguments.device
+#     # devicename = device + 1
 class SelectThe:
     def __init__(self):
         # print("Da werd de Methode gestartet!")
         self.settings =  {
                 # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
                 'Choose nothing and exit' : '',
-                'ts'    :   [['mpegtsmux', 'muxer', {'alignment' : '7'}],    ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay']
+                'ts'    :   [['mpegtsmux', 'muxer', {'alignment' : '7'}],    [ 'mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay'],
+                'flv'   :   [['flvmux', 'muxer', { 'streamable' : True }], [ 'x-flash-video', 'x-flash-screen', 'x-vp6-flash', 'x-vp6-alpha', 'x-h264'], [ 'x-adpcm', 'mpeg1', 'mpeg3', 'mpeg4', 'mpeg2', 'x-nellymoser', 'x-raw', 'x-alaw', 'x-mulaw', 'x-speex'], [], '']
                 }
         self.v_enc_list = {
                 # name    :   [ [codec1, codec1_option1, opt2, ...], [codec2, codec1_option1] ]
@@ -179,7 +195,7 @@ class SelectThe:
       
 
         ind = {str(i):k for i,k in enumerate(self.settings.keys())}
-        print("Index list: %s" % ind)
+        # print("Index list: %s" % ind)
         print('\nPlease choose your Container:\n')
         for key in ind.keys():
             print('%s : %s' % (key, ind[key]))
@@ -198,8 +214,8 @@ class SelectThe:
             # payloader.extend('!')
             rtppay_str = self.settings[container][4]
             print("RTP_Payloader String: %s" % rtppay_str)
-            print(self.possible_v_codecs)
-            print(self.possible_a_codecs)
+            # print(self.possible_v_codecs)
+            # print(self.possible_a_codecs)
 
     def Video(self):
         v_enc = cod_select("Videoformat",self.possible_v_codecs, self.v_enc_list)
@@ -217,175 +233,54 @@ class SelectThe:
         print('\nHow much streams to create?\nChoose a number from 1 to 8\n')
         num_stream = int(input())
         return num_stream
-    
-    def get_all_values(self, d):
-        if isinstance(d, dict):
-            for v in d.values():
-                yield from self.get_all_values(v)
-        elif isinstance(d, list):
-            for v in d:
-                yield from self.get_all_values(v)
-        else:
-            yield d
 
-    def Input(self, device):
+class PossibleInputs:
+    def __init__(self):
+        pass
+    def List(self, device):
         v_input_list = {
-                'Decklink-Card' : [ 'decklinkvideosrc', {'device-number' : '%d' % device, 'do-timestamp' : 'true'} ],
-                'Test picture generator' : [ 'videotestsrc', {} ]
+                'Decklink-Card' : [
+                    [ 'decklinkvideosrc', None, {'device-number' : '%s' % str(device), 'do-timestamp' : 'true'} ]
+                ],
+                'Test picture generator' : [
+                    [ 'videotestsrc', None, {} ]
+                ]
                 }
         a_input_list = {
-                'Decklink-Card' : [ 'decklinkaudosrc', {} ],
-                'Test sound generator' : [ 'audiotestsrc', {} ]
+                'Decklink-Card' : [
+                    [ 'decklinkaudosrc', None, {'device-number' : '%d' % device, 'connection' : '1', 'channels' : '8', 'do-timestamp' : 'true'} ]
+                ],
+                'Test sound generator' : [
+                    [ 'audiotestsrc', None, {'is-live' : '1', 'do-timestamp' : 'true'} ] #, '!', 'audio/x-raw,channels=8'
+                ]
                 }
-        possible_v_inputs = []
-        for option in v_input_list.items():
-            possible_v_inputs.append(option[0])
-        print(possible_v_inputs)
-        in_v_choice = cod_select("Video Input", possible_v_inputs, v_input_list)
-        print(in_v_choice)
+        return v_input_list, a_input_list
 
+    def Define(self):
+        v_parameter = self.List(1)[0]
+        a_parameter = self.List(1)[1]
+        possible_v_inputs = []
+        for option in v_parameter.items():
+            possible_v_inputs.append(option[0])
+        # print("Possible Inputs: %s" % possible_v_inputs)
+        in_v_choice = in_select("Video Input", possible_v_inputs, v_parameter)
+        # print(in_v_choice)
         possible_a_inputs = []
-        
+        for option in a_parameter.items():
+            possible_a_inputs.append(option[0])
+        # print("Possible Inputs: %s" % possible_v_inputs)
+        in_a_choice = in_select("Audio Input", possible_a_inputs, a_parameter)
+        # print(in_a_choice)
         return in_v_choice, in_a_choice
 
+    def Generate(self, v_inputchoice, a_inputchoice, device):
+        v_parameter = self.List(device)[0]
+        a_parameter = self.List(device)[1]
+        v_in = v_parameter[v_inputchoice][0]
+        a_in = a_parameter[a_inputchoice][0]
+        # print("Video in: %s" % v_in)
+        return v_in, a_in
 
-        a_pip = ['!', 'tee', 'name=audio']
-
-        muxer_pip = ['name=mux', '!']
-        # muxer.extend(muxer_pip)
-
-    # port = arguments.port
-    
-    # v_src = inputs[arguments.input]
-    # v_enc = [encoders[arguments.codec][2], '!']
-    # v_pay = [encoders[arguments.codec][1], '!']
-
-    def Noting(self):    
-        v_pip = ["!", "videoconvert", "!",
-            "videoscale", "!",
-            "video/x-raw,width=1920,height=1080", "!"
-            ]
-        v_pip.extend(v_enc)
-        v_pip.extend(muxer)
-        v_pip.extend(payloader)
-    # v_pip.extend(v_sink)
-    
-        for device in range(0, num_stream):
-            port = startport + device
-            print("Stream %s" % str(device +1))
-            print("Port: %s" % port)
-            devicename = "Video%s" % str(device + 1)
-            v_input_params =  {
-                        "Decklink card" : ["decklinkvideosrc", "device-number=%d" % device, "do-timestamp=true"],
-                        "Test picture and sound generator" : ["videotestsrc"]
-                        }
-            v_src = v_input_params[in_choice]
-            print("Videosource: %s" % v_src)
-            v_src_gst = Gst.ElementFactory.make(v_src[0], None)
-            if len(v_src) > 0:
-                for n in range(1,len(v_src),1):
-                    setattr(self, v_src[n], v_src_gst)
-        
-            a_inputs_params =   {
-                            "Decklink card" : ['decklinkaudiosrc', 'device-number=%d' % device, 'connection=1', 'channels=8', 'do-timestamp=true'],
-                            "Test picture and sound generator" : ['audiotestsrc', 'is-live=1', 'do-timestamp=true', '!', 'audio/x-raw,channels=8'],
-                            }
-            a_src = a_inputs_params[in_choice]
-
-            a_pipeline = [
-                    'audio.', "!", "queue", "!", "audioconvert", "!", "audioresample", "!", "queue", "!", "jackaudiosink", "connect=0", "client-name=%s" % devicename
-                    , "audio.", "!", 'deinterleave', 'name=d'
-                    , 'interleave', 'channel-positions-from-input=true', 'name=i', '!', 'audioconvert', '!', 'a_enc.'
-                    , 'd.src_0', '!', 'i.sink_0'
-                ]
-            a_pip.extend(a_pipeline)
-            a_pip.extend(a_enc_pip)
-
-            v_sink =    ["udpsink",
-                    "host=%s" % hostname,
-                    "port=%d" % port
-                    ]
-            arglist = []
-        # arglist = [gstreamer, "-v"]
-            arglist.extend(a_src)
-            arglist.extend(a_pip)
-            arglist.extend(v_src)
-            arglist.extend(v_pip)
-        # arglist.extend(v_sink)
-        # if arguments.debug:
-        #     print("Calling gstreamer:\n"," ".join(arglist))
-        
-            print("Devicename: %s" % devicename)
-            commandstring = '\'( %s )\'' % ' '.join(arglist)
-            print()
-        # print("Commandline: %s" % commandstring)
-            factory.set_launch(commandstring)
-            print("SET COMMANDSTRING:    %s    TO SERVER" % commandstring)
-            mounts.add_factory("/%s" %devicename, factory)
-            print("ADDED STRING FACTORY AT MOUNTPOINT: %s" % devicename)
-            server.attach(None)
-            print("ATTACHED FACTORY TO SERVER")
-
-        # call_pipe(arglist)
-        # mp.set_start_method('spawn')
-        # process = mp.Process(target=call_pipe, args=(arglist))
-        # process.start
-        # process.join
-
-        # process = Popen(arglist, stdout=PIPE)
-
-        # def signal_handler(signal, frame):
-        #     process.kill()
-        #     print('Terminating child process')
-
-        # signal.signal(signal.SIGINT, signal_handler)
-        # patternGenerated = False
-        # try:
-        #     p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay_str)
-        #     for line in process.stdout:
-        #         pattern = p.search(line)
-        #         if pattern and not patternGenerated:
-        #             parameters = re.findall(rb'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', pattern.groups()[0])
-        #             print('Parameter:')
-        #             print(parameters)
-        #             parammap = defaultdict(str)
-        #             for (_, param, value, value2) in parameters:
-        #                 parammap[param.decode('ascii')] = value.decode('ascii') if value else value2.decode('ascii')
-        #                 parammap['port'] = port
-
-        #             if len(parammap) > 0:
-        #                 patternGenerated = True
-        #                 # if arguments.sdp:
-        #                 createsdp(hostname, [parammap], devicename)
-        #                 for param,value in parammap.items():
-        #                     print("%s = %s" % (param, value))
-        # finally:
-        #     process.wait()
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--hostname", help="hostname or IP address of the destination", default='239.230.225.255')
-    parser.add_argument("--sdp", help="generates SDP file for the stream (defaults to false)", action="store_true", default='true')
-    parser.add_argument("--debug", help="shows command line in use to call gstreamer", action="store_true", default="true")
-    # parser.add_argument("--port", "-p", help="port (defaults to 5000)", type=int, d1efault=5000)
-    parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264', 'mp4'], default='mp4')
-    parser.add_argument("--device", help="Device id (defaults to 0)", type=int, default=0)
-    parser.add_argument("--input", help="", choices=['webcam', 'decklink', 'test', 'original'], default="test")
-    parser.add_argument("--audio", help="Audiocodec to choose for the stream", choices=['opus', 'asf'], default='opus')
-
-    args = parser.parse_args()
-
-    args.hostname = socket.gethostbyname(args.hostname)
-    # print("Using hostname %s using device %d" % (args.hostname, args.device))
-
-    main(args)
-    print("Server startet at %s\nListening on %s\nMounts at %s" % (server.props.address, server.props.bound_port, server.props.mount_points) )
-    mainloop.run()
-#
-#mögliche andere muxer:
-# avmux_psp a: mpeg4                v: x-h264 -> quicktime
-# mp4mux    a: mpeg1,4; ac3; opus   v: mpeg4; divx; x-h264; x-h265; x-mp4-part; x-av1
-# 
 # a working pipeline:
 # gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux alignment=7 name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5000
 # gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux alignment=7 name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5001
