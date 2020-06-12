@@ -1,3 +1,5 @@
 .idea/
 *.sdp
 .vscode/settings.json
+__pycache__/*
+__pycache__/gstream_choice_inanity.cpython-36.pyc

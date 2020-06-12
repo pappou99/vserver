@@ -355,4 +355,37 @@ if __name__ == "__main__":
 # 
 # a working pipeline:
 # gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux alignment=7 name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5000
-# gst-launch-1.0 -v audiotestsrc is-live=1 do-timestamp=true ! audio/x-raw,channels=8 ! tee name=audio audio. ! queue ! audioconvert ! audioresample ! queue ! jackaudiosink connect=0 client-name=Video1 audio. ! deinterleave name=d interleave channel-positions-from-input=true name=i ! audioconvert ! a_enc. d.src_0 ! i.sink_0 opusenc name=a_enc ! mux. videotestsrc ! videoconvert ! videoscale ! video/x-raw,width=1920,height=1080 ! avenc_mpeg4 ! mpegtsmux alignment=7 name=mux ! rtpmp2tpay ! udpsink host=239.230.225.255 port=5001
+
+# gst-launch-1.0 -v 
+
+# audiotestsrc is-live=1 do-timestamp=true
+# audio/x-raw,channels=8
+# tee name=audio 
+# 
+# audio.
+# queue
+# audioconvert
+# audioresample
+# queue
+# jackaudiosink connect=0 client-name=Video1 
+# 
+# audio.
+# deinterleave name=d 
+# 
+# interleave channel-positions-from-input=true name=i
+# audioconvert
+# a_enc. 
+# 
+# d.src_0
+# i.sink_0 
+# 
+# opusenc name=a_enc
+
+# mux. videotestsrc
+# videoconvert
+# videoscale
+# video/x-raw,width=1920,height=1080
+# avenc_mpeg4
+# mpegtsmux alignment=7 name=mux
+# rtpmp2tpay
+# udpsink host=239.230.225.255 port=5001

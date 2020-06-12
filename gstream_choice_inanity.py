@@ -240,7 +240,7 @@ class PossibleInputs:
     def List(self, device):
         v_input_list = {
                 'Decklink-Card' : [
-                    [ 'decklinkvideosrc', None, {'device-number' : '%s' % str(device), 'do-timestamp' : 'true'} ]
+                    [ 'decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True} ]
                 ],
                 'Test picture generator' : [
                     [ 'videotestsrc', None, {} ]
@@ -248,10 +248,10 @@ class PossibleInputs:
                 }
         a_input_list = {
                 'Decklink-Card' : [
-                    [ 'decklinkaudosrc', None, {'device-number' : '%d' % device, 'connection' : '1', 'channels' : '8', 'do-timestamp' : 'true'} ]
+                    [ 'decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : 8, 'do-timestamp' : True} ]
                 ],
                 'Test sound generator' : [
-                    [ 'audiotestsrc', None, {'is-live' : '1', 'do-timestamp' : 'true'} ] #, '!', 'audio/x-raw,channels=8'
+                    [ 'audiotestsrc', None, {'is-live' : 1, 'do-timestamp' : True} ] #, '!', 'audio/x-raw,channels=8'
                 ]
                 }
         return v_input_list, a_input_list
