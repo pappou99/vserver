@@ -147,7 +147,7 @@ class SelectThe:
         self.settings =  {
                 # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
                 'Choose nothing and exit' : '',
-                'ts'    :   [['mpegtsmux', 'muxer', {'alignment' : '7'}],    [ 'mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay'],
+                'ts'    :   [['mpegtsmux', 'muxer', {'alignment' : 7}],    [ 'mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], ['rtpmp2tpay'], b'GstRTPMP2TPay'],
                 'flv'   :   [['flvmux', 'muxer', { 'streamable' : True }], [ 'x-flash-video', 'x-flash-screen', 'x-vp6-flash', 'x-vp6-alpha', 'x-h264'], [ 'x-adpcm', 'mpeg1', 'mpeg3', 'mpeg4', 'mpeg2', 'x-nellymoser', 'x-raw', 'x-alaw', 'x-mulaw', 'x-speex'], [], '']
                 }
         self.v_enc_list = {
@@ -161,7 +161,7 @@ class SelectThe:
                             , ['mpeg2enc', {} ] 
                             ],
                 'mpeg4' :   [ 
-                            ['avenc_mpeg4', {} ] 
+                            ['avenc_mpeg4', None, {} ] 
                             ],
                 # 'x-dirac' :   [ [''] ],
                 'x-h264'  :   [ 
@@ -207,10 +207,10 @@ class SelectThe:
         else:
             container = ind[con_choice]
             print("Container: %s" %container)
-            muxer = self.settings[container][0]
+            self.muxer = self.settings[container][0]
             self.possible_v_codecs = self.settings[container][1]
             self.possible_a_codecs = self.settings[container][2]
-            payloader = self.settings[container][3]
+            self.payloader = self.settings[container][3]
             # payloader.extend('!')
             rtppay_str = self.settings[container][4]
             print("RTP_Payloader String: %s" % rtppay_str)

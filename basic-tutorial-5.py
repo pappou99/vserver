@@ -313,5 +313,7 @@ class Player(object):
             self.analyze_streams()
 
 if __name__ == '__main__':
-    p = Player()
-    p.start()
+    ps = [ 'one', 'two', 'three' ]
+    for p in ps:
+        p = Player()
+        p.start()

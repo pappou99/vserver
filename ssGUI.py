@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#edits for linux functionality
 
 """
 This module sets up a video stream from internal or connected webcam using Gstreamer.
@@ -59,7 +60,7 @@ class WebcamManager:
     def create_gui(self):
         """Set up the GUI"""
         # Window
-        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window = Gtk.Window(Gtk.WINDOW_TOPLEVEL)
         self.window.set_title("Smile or be killed.")
         self.window.set_default_size(window_w, window_h)
         self.window.connect("destroy", self.exit, "WM destroy")
@@ -67,33 +68,33 @@ class WebcamManager:
                                        min_height=window_h, 
                                        max_width=window_w, 
                                        max_height=window_h,)
-        self.window.set_position(gtk.WIN_POS_CENTER)
+        self.window.set_position(Gtk.WIN_POS_CENTER)
 
         # Video screen
-        vbox = gtk.VBox()
+        vbox = Gtk.VBox()
         self.window.add(vbox)
-        self.movie_window = gtk.DrawingArea()
+        self.movie_window = Gtk.DrawingArea()
         vbox.add(self.movie_window)
 
         # Button
-        hbox = gtk.HBox()
+        hbox = Gtk.HBox()
         vbox.pack_start(hbox, False)
         hbox.set_border_width(10)
-        hbox.pack_start(gtk.Label())
-        self.button = gtk.Button("Snap")
+        hbox.pack_start(Gtk.Label())
+        self.button = Gtk.Button("Snap")
         self.button.connect("clicked", self.take_snapshot)
         hbox.pack_start(self.button, False)
-        hbox.add(gtk.Label())
+        hbox.add(Gtk.Label())
        
     def create_video_pipeline(self):
-        """Set up the video pipeline and the communication bus bewteen the video stream and gtk DrawingArea """
+        """Set up the video pipeline and the communication bus bewteen the video stream and Gtk DrawingArea """
         src = gst_src + self.device # video input
         src_format = gst_src_format +',width='+ str(self.W) + ',height=' + str(self.H) +',framerate='+ self.framerate # video parameters
         videosink = gst_videosink # video receiver
         video_pipeline = src + sep  + src_format + sep + videosink 
         # print ( 'gstreamer video pipeline : %s', % video_pipeline)
-        self.video_player = gst.parse_launch(video_pipeline) # create pipeline
-        self.video_player.set_state(gst.STATE_PLAYING)       # start video stream
+        self.video_player = Gst.parse_launch(video_pipeline) # create pipeline
+        self.video_player.set_state(Gst.STATE_PLAYING)       # start video stream
 
         bus = self.video_player.get_bus()
         bus.add_signal_watch()
@@ -103,20 +104,20 @@ class WebcamManager:
                    
     def exit(self, widget, data=None):
         """ Exit the program """
-        self.video_player.set_state(gst.STATE_NULL) 
-        gtk.main_quit()
+        self.video_player.set_state(Gst.STATE_NULL) 
+        Gtk.main_quit()
         
     def on_message(self, bus, message):
         """ Gst message bus. Closes the pipeline in case of error or EOS (end of stream) message """
         t = message.type
-        if t == gst.MESSAGE_EOS:
+        if t == Gst.MESSAGE_EOS:
             print ( "MESSAGE EOS")
-            self.video_player.set_state(gst.STATE_NULL)
-        elif t == gst.MESSAGE_ERROR:
+            self.video_player.set_state(Gst.STATE_NULL)
+        elif t == Gst.MESSAGE_ERROR:
             print ( "MESSAGE ERROR" )
             err, debug = message.parse_error()
             print ( "Error: %s" % err, debug )
-            self.video_player.set_state(gst.STATE_NULL)
+            self.video_player.set_state(Gst.STATE_NULL)
                     
     def on_sync_message(self, bus, message):
         """ Set up the Webcam <--> GUI messages bus """
@@ -127,17 +128,17 @@ class WebcamManager:
             # Assign the viewport
             imagesink = message.src
             imagesink.set_property("force-aspect-ratio", True)
-            imagesink.set_xwindow_id(self.movie_window.window.xid) # Sending video stream to gtk DrawingArea
+            imagesink.set_xwindow_id(self.movie_window.window.xid) # Sending video stream to Gtk DrawingArea
 
     def take_snapshot(self, e):
         """ Capture a snapshot from DrawingArea and save it into a image file """
         drawable = self.movie_window.window
         colormap = drawable.get_colormap()
-        pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, 0, 8, *drawable.get_size())
+        pixbuf = Gtk.gdk.Pixbuf(Gtk.gdk.COLORSPACE_RGB, 0, 8, *drawable.get_size())
         pixbuf = pixbuf.get_from_drawable(drawable, colormap, 0,0,0,0, *drawable.get_size()) 
-        pixbuf = pixbuf.scale_simple(self.W, self.H, gtk.gdk.INTERP_HYPER) # resize
+        pixbuf = pixbuf.scale_simple(self.W, self.H, Gtk.gdk.INTERP_HYPER) # resize
         # We resize from actual window size to wanted resolution
-        # gtk.gdk.INTER_HYPER is the slowest and highest quality reconstruction function
+        # Gtk.gdk.INTER_HYPER is the slowest and highest quality reconstruction function
         # More info here : http://developer.gnome.org/pygtk/stable/class-gdkpixbuf.html#method-gdkpixbuf--scale-simple
         filename = snapshot_name() + '.' + self.snap_format
         filepath = relpath(filename)
@@ -146,8 +147,8 @@ class WebcamManager:
             
     def run(self):
         """ Main loop """
-        gtk.gdk.threads_init()
-        gtk.main()
+        Gtk.gdk.threads_init()
+        Gtk.main()
 
 def snapshot_name():
     """ Return a string of the form yyyy-mm-dd-hms """
