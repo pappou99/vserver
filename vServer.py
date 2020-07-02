@@ -503,7 +503,13 @@ class Stream(threading.Thread):
 
         return True
 
+    def on_new_deinterleave_pad(self, dbin, pad, islast):
+            print("test")
+            # deinterleave = pad.get_parent()
+            # pipeline = deinterleave.get_parent()
+
     def malm(self, to_add):
+
         # Make-add-link multi
         prev = None
         prev_name = None
@@ -566,6 +572,7 @@ class Stream(threading.Thread):
             self.pipeline.add(element)
 
             if prev_name == "deinterleave":
+                prev.connect("pad-added", self.on_new_deinterleave_pad)
                 prev_factory = Gst.ElementFactory.find(prev_name)
                 pads = prev_factory.get_static_pad_templates()
                 for pad in pads:
