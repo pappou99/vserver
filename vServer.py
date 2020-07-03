@@ -31,7 +31,6 @@ class Settings:
     mqtt_server = 'localhost'
     mpqtt_port = 1883
     mqtt_topic = 'video'
-    audio_channels_to_stream = 1
 
 class MqttCommands():
     play = b'play'
@@ -64,9 +63,13 @@ class MqttRemote(threading.Thread):
 
     def on_message(self, client, userdata, msg):
         print("Message received on\ntopic: {0}\nmessage: {1}".format(msg.topic, msg.payload))
+        topics = msg.topic.split("/")
+        print(topics)
+        video_no = int(topics[-3])
+        audio_no = int(topics[-1])
         if msg.payload == MqttCommands.play:
-            video_no = int(msg.topic.split("/")[-1])
-            print("Video {0} soll gestartet werden".format(video_no))#
+            print("Video {0} soll mit Audio {1} gestartet werden".format(video_no, audio_no))#
+            Settings.streams[video_no].audio_in_stream = audio_no
             Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
             print("Stop")
@@ -351,7 +354,7 @@ class Stream(threading.Thread):
 
     def __init__(self, streamnumber, video_in_name, audio_in_name):
         threading.Thread.__init__(self)
-        self.counter_audios_stream = 0
+        self.audio_counter = 0
         self.id = streamnumber
         self.port = Settings.startport+streamnumber
         self.streamnumber_readable = streamnumber+1
@@ -391,10 +394,10 @@ class Stream(threading.Thread):
             ['capsfilter', None, {'caps' : 'audio/x-raw,channels=8'}],
             ['tee', 'audio', {}],
             ['deinterleave', 'd', {}],
-            ['queue', 'd_follower', {}],
-            ['capsfilter', None, {'caps' : 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s' % Settings.audio_channels_to_stream}],
-            ['queue', None, {}],
-            ['interleave', 'i', {'channel-positions-from-input' : True}],
+            # ['queue', 'd_follower', {}],
+            # ['capsfilter', None, {'caps' : 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s' % Settings.audio_channels_to_stream}],
+            # ['queue', None, {}],
+            ['interleave', 'd_follower', {'channel-positions-from-input' : True}],
     #         ['audioconvert', None, {}],
     #         [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]]
             ['autoaudiosink', 'speaker', {}]
@@ -445,24 +448,31 @@ class Stream(threading.Thread):
         
         
     def on_new_deinterleave_pad(self, element, pad):
-        
-        # print("# New pad added #")
-        deint = pad.get_parent()
-        # print("deint: %s" % deint)
-        pipeline = deint.get_parent()
-        # print('pipe: %s' % pipeline)
-        # print(self.current_name)
-        follower = pipeline.get_by_name('d_follower')
-        # print("follower: %s" % follower)
-        dest_pad = self.element.get_static_pad('sink')
-        # print("dest pad: %s" % dest_pad)
-        link_status = deint.link(follower)
-        if link_status == False:
-            print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
-        else:
-            print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
+        self.audio_counter += 1
+        if self.audio_counter == self.audio_in_stream:
+            print("Connecting Audio %s to stream" % self.audio_in_stream)
+            # print("# New pad added #")
+            deint = pad.get_parent()
+            # print("deint: %s" % deint)
+            pipeline = deint.get_parent()
+            # print('pipe: %s' % pipeline)
+            # print(self.current_name)
+            follower = pipeline.get_by_name('d_follower')
+            # print("follower: %s" % follower)
+            dest_pad = self.element.get_static_pad('sink')
+            # print("dest pad: %s" % dest_pad)
+            link_status = deint.link(follower)
+            if link_status == False:
+                print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
+            else:
+                print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
+                ret = self.pipeline.set_state(Gst.State.PLAYING)
+                if ret == Gst.StateChangeReturn.FAILURE:
+                    print("ERROR: Unable to set the pipeline to the playing state")
+                    sys.exit(1)
         # deinterleave = pad.get_parent()
         # pipeline = deinterleave.get_parent()
+        
 
     def run(self):
         # Stream.lock.acquire()
@@ -589,10 +599,10 @@ class Stream(threading.Thread):
                     self.element.set_property('caps', caps)
                 else:
                     self.element.set_property(p, v)
-            if n[0] == 'interleave':
-                if prev_name != 'queue':
-                    print("Error, you have to place a queue right before the interleaver")
-                    break
+            # if n[0] == 'interleave':
+            #     if prev_name != 'queue':
+            #         print("Error, you have to place a queue right before the interleaver")
+            #         break
             self.pipeline.add(self.element)
 
             if prev_name == "deinterleave":
