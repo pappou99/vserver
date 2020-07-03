@@ -31,6 +31,7 @@ class Settings:
     mqtt_server = 'localhost'
     mpqtt_port = 1883
     mqtt_topic = 'video'
+    audio_channels_to_stream = 1
 
 class MqttCommands():
     play = b'play'
@@ -306,7 +307,7 @@ class Ui:
     def __init__(self):
         print('Building Ui')
         self.main_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
-        self.main_window.connect("delete-event", self.on_delete_event)
+        self.main_window.connect(self, "delete-event", self.on_delete_event)
         self.main_hbox = Gtk.HBox.new(False, 0)
         
     def controls_per_stream(self, stream):
@@ -350,6 +351,7 @@ class Stream(threading.Thread):
 
     def __init__(self, streamnumber, video_in_name, audio_in_name):
         threading.Thread.__init__(self)
+        self.counter_audios_stream = 0
         self.id = streamnumber
         self.port = Settings.startport+streamnumber
         self.streamnumber_readable = streamnumber+1
@@ -389,6 +391,12 @@ class Stream(threading.Thread):
             ['capsfilter', None, {'caps' : 'audio/x-raw,channels=8'}],
             ['tee', 'audio', {}],
             ['deinterleave', 'd', {}],
+            ['queue', 'd_follower', {}],
+            ['capsfilter', None, {'caps' : 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s' % Settings.audio_channels_to_stream}],
+            ['queue', None, {}],
+            ['interleave', 'i', {'channel-positions-from-input' : True}],
+    #         ['audioconvert', None, {}],
+    #         [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]]
             ['autoaudiosink', 'speaker', {}]
        ])
 
@@ -436,6 +444,25 @@ class Stream(threading.Thread):
         print('Made the whole things, stream %s ready to play...' % self.devicename)
         
         
+    def on_new_deinterleave_pad(self, element, pad):
+        
+        # print("# New pad added #")
+        deint = pad.get_parent()
+        # print("deint: %s" % deint)
+        pipeline = deint.get_parent()
+        # print('pipe: %s' % pipeline)
+        # print(self.current_name)
+        follower = pipeline.get_by_name('d_follower')
+        # print("follower: %s" % follower)
+        dest_pad = self.element.get_static_pad('sink')
+        # print("dest pad: %s" % dest_pad)
+        link_status = deint.link(follower)
+        if link_status == False:
+            print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
+        else:
+            print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
+        # deinterleave = pad.get_parent()
+        # pipeline = deinterleave.get_parent()
 
     def run(self):
         # Stream.lock.acquire()
@@ -503,11 +530,6 @@ class Stream(threading.Thread):
 
         return True
 
-    def on_new_deinterleave_pad(self, dbin, pad, islast):
-            print("test")
-            # deinterleave = pad.get_parent()
-            # pipeline = deinterleave.get_parent()
-
     def malm(self, to_add):
 
         # Make-add-link multi
@@ -522,13 +544,15 @@ class Stream(threading.Thread):
             #     raise Exception('cannot create element {}'.format(n[0]))
 
             ###neuer Code
+            self.current_name = n[0]
+            print("Current Name: %s" % self.current_name)
             factory = Gst.ElementFactory.find(n[0])
             if factory == None:
-                print('ERROR! No Element {0} found'.format(n[0]))
+                print('\n########## ERROR! No Element {0} found ##########\n'.format(n[0]))
                 break
-            element = factory.make(n[0], n[1])
-            if not element:
-                raise Exception('cannot create element {}'.format(n[0]))
+            self.element = factory.make(n[0], n[1])
+            if not self.element:
+                raise Exception('########## ERROR! cannot create element {} ##########\n'.format(n[0]))
                 break
             # if n[0] == "deinterleave":
             #     pads = factory.get_static_pad_templates()
@@ -547,7 +571,7 @@ class Stream(threading.Thread):
             # ###bis dahin
             
 
-            if n[1]: setattr(self, n[1], element)
+            if n[1]: setattr(self, n[1], self.element)
 
             # if n[0] == "deinterleave":
             #     pads = element.get_static_pad_templates()
@@ -562,40 +586,38 @@ class Stream(threading.Thread):
             for p, v in n[2].items():
                 if p == 'caps':
                     caps = Gst.Caps.from_string(v)
-                    element.set_property('caps', caps)
+                    self.element.set_property('caps', caps)
                 else:
-                    element.set_property(p, v)
+                    self.element.set_property(p, v)
             if n[0] == 'interleave':
                 if prev_name != 'queue':
                     print("Error, you have to place a queue right before the interleaver")
                     break
-            self.pipeline.add(element)
+            self.pipeline.add(self.element)
 
             if prev_name == "deinterleave":
                 prev.connect("pad-added", self.on_new_deinterleave_pad)
-                prev_factory = Gst.ElementFactory.find(prev_name)
-                pads = prev_factory.get_static_pad_templates()
-                for pad in pads:
-                    padtemplate = pad.get()
-                    print(pad)
-                    if pad.direction == Gst.PadDirection.SRC and pad.presence == Gst.PadPresence.SOMETIMES:
-                        print("Found pad!")
-                        # prev.request_pad(padtemplate)
-                        print("%s ist %s" % (padtemplate.name_template, pad))
-                        src_pad = Gst.Pad.new_from_static_template(pad, 'src_%d')
-                        prev.add_pad(src_pad)
-                dest_pad = element.get_static_pad('sink')
-                link_status = src_pad.link(dest_pad)
-                if link_status == False:
-                    print('Error linking the two pads')
+                # prev_factory = Gst.ElementFactory.find(prev_name)
+                # pads = prev_factory.get_static_pad_templates()
+                # for pad in pads:
+                #     padtemplate = pad.get()
+                #     print(pad)
+                #     if pad.direction == Gst.PadDirection.SRC and pad.presence == Gst.PadPresence.SOMETIMES:
+                #         # print("Found pad!")
+                #         # prev.request_pad(padtemplate)
+                #         print("%s ist %s" % (padtemplate.name_template, pad))
+                #         src_pad = Gst.Pad.new_from_static_template(pad, 'src_%d')
+                #         prev.add_pad(src_pad)
+
+
             else:
                 if prev:
-                    link_status = prev.link(element)
+                    link_status = prev.link(self.element)
                     if link_status == False:
-                        print('\nLinking %s to %s failed\n' % (prev_name, n[0]))
-            prev = element
+                        print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev_name, n[0]))
+            prev = self.element
             prev_name = n[0]
-            prev_gst_name = element.get_name()
+            prev_gst_name = self.element.get_name()
         
     # this function is called when an error message is posted on the bus
     def on_error(self, bus, msg):
@@ -691,6 +713,5 @@ class Stream(threading.Thread):
             # if the message is the "tags-changed", update the stream info in
             # the GUI
             self.analyze_streams()
-
 
 main = Main()
