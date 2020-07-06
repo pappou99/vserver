@@ -7,7 +7,9 @@ gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkX11', '3.0')
+gi.require_version('GstSdp', '1.0')
 from gi.repository import Gst, GstVideo, GLib
+from gi.repository import GstSdp
 from gi.repository import Gtk, GdkX11
 
 import paho.mqtt.client as mqtt
@@ -30,7 +32,7 @@ class Settings:
     stream = ''
     mqtt_server = 'localhost'
     mpqtt_port = 1883
-    mqtt_topic = 'video'
+    mqtt_topic = ['gvg-grp', 'vserv1', 'video']
 
 class MqttCommands():
     play = b'play'
@@ -42,8 +44,8 @@ class MqttRemote(threading.Thread):
         self.host = host
 
         ###Building the topic we want to subscribe
-        self.topic = ['gvg-grp', 'vserv1']
-        self.topic.append(topic)
+        self.topic = []
+        self.topic.extend(topic)
         self.topic.append('#')
         # print(self.topic)
         self.topic_str = "/".join(self.topic)
@@ -58,21 +60,22 @@ class MqttRemote(threading.Thread):
         self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
-        print("Connected to {0} with result code {1}".format(self.host, rc))
+        print("Connected to MQTT-Server at {0} with result code {1}".format(self.host, rc))
         self.client.subscribe(self.topic_str)
 
     def on_message(self, client, userdata, msg):
-        print("Message received on\ntopic: {0}\nmessage: {1}".format(msg.topic, msg.payload))
+        print("\nMessage received on topic:\n{0}\nmessage: {1}".format(msg.topic, msg.payload))
         topics = msg.topic.split("/")
-        print(topics)
+        # print(topics)
         video_no = int(topics[-3])
         audio_no = int(topics[-1])
         if msg.payload == MqttCommands.play:
-            print("Video {0} soll mit Audio {1} gestartet werden".format(video_no, audio_no))#
+            # print(Settings.streams[video_no].__dict__)
+            print("\nVideo {0} soll mit Audio {1} gestartet werden".format(video_no, audio_no))#
             Settings.streams[video_no].audio_in_stream = audio_no
             Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
-            print("Stop")
+            Settings.streams[video_no].stop()
             
 
 class PossibleInputs:
@@ -266,6 +269,8 @@ class SelectThe:
         print("Your %s choice: %s" % (name, choice))
         return choice
 
+
+
 class Main:
     def __init__(self):
         select = SelectThe()
@@ -291,7 +296,7 @@ class Main:
             stream_readable = inp_no+1
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, self.v_in, self.a_in)
-            # Settings.streams[stream_readable].start()# instantly play video for testing
+            Settings.streams[stream_readable].start()# instantly play video for testing
         
         print(Settings.streams)
         remote = MqttRemote()
@@ -354,10 +359,12 @@ class Stream(threading.Thread):
 
     def __init__(self, streamnumber, video_in_name, audio_in_name):
         threading.Thread.__init__(self)
+        self._stop_signal = threading.Event()
         self.audio_counter = 0
         self.id = streamnumber
         self.port = Settings.startport+streamnumber
         self.streamnumber_readable = streamnumber+1
+        self.audio_in_stream = 1
         print('Port: %s' % self.port)
         self.devicename = 'video_%s' % str(self.streamnumber_readable)
         self.queue_aud = Gst.ElementFactory.make("queue", "queue_aud")
@@ -393,12 +400,12 @@ class Stream(threading.Thread):
             audioinput,
             ['capsfilter', None, {'caps' : 'audio/x-raw,channels=8'}],
             ['tee', 'audio', {}],
-            ['deinterleave', 'd', {}],
+            ['deinterleave', 'deinterleaver', {}],
             # ['queue', 'd_follower', {}],
             # ['capsfilter', None, {'caps' : 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s' % Settings.audio_channels_to_stream}],
             # ['queue', None, {}],
             ['interleave', 'd_follower', {'channel-positions-from-input' : True}],
-    #         ['audioconvert', None, {}],
+            ['audioconvert', None, {}],
     #         [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]]
             ['autoaudiosink', 'speaker', {}]
        ])
@@ -417,7 +424,7 @@ class Stream(threading.Thread):
 #        #     ['autoaudiosink', 'speaker', {}]
 #        # ])
 #
-#        # self.d.link(getattr(self, 'speaker'))
+#        # self.deinterleaver.link(getattr(self, 'speaker'))
 
     #     self.malm([
     #         ['capsfilter', None, {'caps' : 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=1'}],
@@ -428,109 +435,117 @@ class Stream(threading.Thread):
     #    ])
     #     self.audio.link(getattr(self, 'deinterleaver'))
 
-    # #     # Video input
-    #     self.malm([
-    # #         # ['decklinkvideosrc', None, {'connection': 1, 'mode': 12, 'buffer-size': 10, 'video-format': 1}],
-    #         # ['uridecodebin', None, {'uri' : 'http://download.blender.org/demo/movies/Sintel.2010.720p.mkv'}],
-    #         videoinput,
-    #         ['videoconvert', None, {}],
-    #         ['videoscale', None, {}],
-    #         ['capsfilter', None, {'caps': 'video/x-raw, width=1920, height=1080'}],
-    #         [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
-    #         [Settings.muxer[0], 'muxer', Settings.muxer[1]],
-    #         [Settings.payloader[0], None, Settings.payloader[1]],
-    #         ['udpsink', None, {'host': Settings.stream_ip, 'port' : self.port}]
-    #    ])
+    #     # Video input
+        self.malm([
+    #         # ['decklinkvideosrc', None, {'connection': 1, 'mode': 12, 'buffer-size': 10, 'video-format': 1}],
+            # ['uridecodebin', None, {'uri' : 'http://download.blender.org/demo/movies/Sintel.2010.720p.mkv'}],
+            videoinput,
+            ['videoconvert', None, {}],
+            ['videoscale', None, {}],
+            ['capsfilter', None, {'caps': 'video/x-raw, width=1920, height=1080'}],
+            [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
+            [Settings.muxer[0], 'muxer', Settings.muxer[1]],
+            [Settings.payloader[0], 'payloader', Settings.payloader[1]],
+            ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
+       ])
 
-    #     self.a_enc.link(getattr(self, 'muxer'))
+        # self.a_enc.link(getattr(self, 'muxer'))
 
         print('Made the whole things, stream %s ready to play...' % self.devicename)
-        
-        
-    def on_new_deinterleave_pad(self, element, pad):
-        self.audio_counter += 1
-        if self.audio_counter == self.audio_in_stream:
-            print("Connecting Audio %s to stream" % self.audio_in_stream)
-            # print("# New pad added #")
-            deint = pad.get_parent()
-            # print("deint: %s" % deint)
-            pipeline = deint.get_parent()
-            # print('pipe: %s' % pipeline)
-            # print(self.current_name)
-            follower = pipeline.get_by_name('d_follower')
-            # print("follower: %s" % follower)
-            dest_pad = self.element.get_static_pad('sink')
-            # print("dest pad: %s" % dest_pad)
-            link_status = deint.link(follower)
-            if link_status == False:
-                print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
-            else:
-                print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
-                ret = self.pipeline.set_state(Gst.State.PLAYING)
-                if ret == Gst.StateChangeReturn.FAILURE:
-                    print("ERROR: Unable to set the pipeline to the playing state")
-                    sys.exit(1)
-        # deinterleave = pad.get_parent()
-        # pipeline = deinterleave.get_parent()
-        
+
+    
+    
+    def note_caps(self, pad, args):
+        print('Caps:')
+        caps = pad.query_caps(None)
+        print(caps.to_string())
 
     def run(self):
+        ###create sdp-file,
+        payloader = self.pipeline.get_by_name('payloader')
+        for pad in payloader.sinkpads:
+            pad.connect('notify::caps', self.note_caps)
+        udp = self.pipeline.get_by_name('udp')
+        for pad in udp.sinkpads:
+            pad.connect('notify::caps', self.note_caps)
+
+        sdp = GstSdp.SDPMessage()
+        print(type(sdp))
+        media_res, media = GstSdp.SDPMedia.new()
+        if media_res != 0:
+            print('Something failed in the SDP-Module')
+        media.add_connection('IN', 'IPV4', Settings.stream_ip, 60, 1)
+        #############
+
         # Stream.lock.acquire()
         print('Starting stream %s' % self.devicename)
-        ret = self.pipeline.set_state(Gst.State.PLAYING)
+        ret = self.pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
             print("ERROR: Unable to set the pipeline to the playing state")
             sys.exit(1)
 
+
         # wait until error, EOS or State-Change
         terminate = False
-        bus = self.pipeline.get_bus()
+        buus = self.pipeline.get_bus()
+        ret = self.pipeline.set_state(Gst.State.PLAYING)
+        if ret == Gst.StateChangeReturn.FAILURE:
+            print("ERROR: Unable to set the pipeline to the playing state")
+            sys.exit(1)
         while True:
-            try:
-                msg = bus.timed_pop_filtered(
-                    0.5 * Gst.SECOND,
-                    Gst.MessageType.ERROR | Gst.MessageType.EOS | Gst.MessageType.STATE_CHANGED)
+            # try:
+            msg = buus.timed_pop_filtered(
+                0.5 * Gst.SECOND,
+                Gst.MessageType.ERROR | Gst.MessageType.EOS | Gst.MessageType.STATE_CHANGED)
 
-                if msg:
-                    t = msg.type
-                    if t == Gst.MessageType.ERROR:
-                        err, dbg = msg.parse_error()
-                        print("ERROR:", msg.src.get_name(), ":", err.message)
-                        if dbg:
-                            print("Debug information:", dbg)
-                        terminate = True
-                    elif t == Gst.MessageType.EOS:
-                        print("End-Of-Stream reached")
-                        terminate = True
-                    elif t == Gst.MessageType.STATE_CHANGED:
-                        # we are only interested in state-changed messages from the
-                        # pieline
-                        if msg.src == self.pipeline:
-                            old, new, pending = msg.parse_state_changed()
-                            print("%s state changed from %s to %s" 
-                            % (self.pipeline.name, Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
+            if msg:
+                t = msg.type
+                if t == Gst.MessageType.ERROR:
+                    err, dbg = msg.parse_error()
+                    print("ERROR:", msg.src.get_name(), ":", err.message)
+                    if dbg:
+                        print("Debug information:", dbg)
+                    terminate = True
+                elif t == Gst.MessageType.EOS:
+                    print("End-Of-Stream reached")
+                    terminate = True
+                elif t == Gst.MessageType.STATE_CHANGED:
+                    # we are only interested in state-changed messages from the
+                    # pieline
+                    if msg.src == self.pipeline:
+                        old, new, pending = msg.parse_state_changed()
+                        print("%s state changged from %s to %s" 
+                        % (self.pipeline.name, Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
 
-                            # print the current capabilities of the sink
-                            # print_pad_capabilities(sink, "sink")
-                    else:
-                        # should not get here
-                        print("ERROR: unexpected message received")
-                    
-            except KeyboardInterrupt:
-                terminate = True
+                        # print the current capabilities of the sink
+                        # print_pad_capabilities(sink, "sink")
+                else:
+                    # should not get here
+                    print("ERROR: unexpected message received")
 
-            if terminate:
+            is_killed = self._stop_signal.wait(1)
+            if is_killed:
+                print('killed')
                 break
+                    
+            # except KeyboardInterrupt:
+            #     terminate = True
+
 
         self.pipeline.set_state(Gst.State.NULL)
 
         
         # Stream.lock.release()
 
-    def stop(self): 
+    def stop(self):
+        # self._stop_event.set()
         print('Exiting...')
-        Gst.debug_bin_to_dot_file(self.pipeline, Gst.DebugGraphDetails.ALL, 'stream')
         self.pipeline.set_state(Gst.State.NULL)
+        Gst.debug_bin_to_dot_file(self.pipeline, Gst.DebugGraphDetails.ALL, 'stream')
+        deint = self.pipeline.get_by_name('deinterleaver')
+        follower = self.pipeline.get_by_name('d_follower')
+        deint.unlink(follower)
+        self._stop_signal.set()
         # self.mainloop.quit()
 
     def do_keyframe(self, user_data):
@@ -549,22 +564,24 @@ class Stream(threading.Thread):
             # print(n)
                     
             
-            # element = Gst.ElementFactory.make(n[0], n[1])
+            # element = Gst.ElementFactory.make(self.current_element, self.current_name)
             # if not element:
-            #     raise Exception('cannot create element {}'.format(n[0]))
+            #     raise Exception('cannot create element {}'.format(self.current_element))
 
             ###neuer Code
-            self.current_name = n[0]
-            print("Current Name: %s" % self.current_name)
-            factory = Gst.ElementFactory.find(n[0])
+            self.current_element = n[0]
+            self.current_name = n[1]
+            self.current_params = n[2]
+            # print("Current Element: %s" % self.current_element)
+            factory = Gst.ElementFactory.find(self.current_element)
             if factory == None:
-                print('\n########## ERROR! No Element {0} found ##########\n'.format(n[0]))
+                print('\n########## ERROR! No Element {0} found ##########\n'.format(self.current_element))
                 break
-            self.element = factory.make(n[0], n[1])
+            self.element = factory.make(self.current_element, self.current_name)
             if not self.element:
-                raise Exception('########## ERROR! cannot create element {} ##########\n'.format(n[0]))
+                raise Exception('########## ERROR! cannot create element {} ##########\n'.format(self.current_element))
                 break
-            # if n[0] == "deinterleave":
+            # if self.current_element == "deinterleave":
             #     pads = factory.get_static_pad_templates()
             #     for pad in pads:
             #         padtemplate = pad.get()
@@ -581,54 +598,63 @@ class Stream(threading.Thread):
             # ###bis dahin
             
 
-            if n[1]: setattr(self, n[1], self.element)
+            if self.current_name: setattr(self, self.current_name, self.element)
 
-            # if n[0] == "deinterleave":
-            #     pads = element.get_static_pad_templates()
-            #     for pad in pads:
-            #         padtemplate = pad.get()
-            #         print(pad)
-            #         if pad.direction == Gst.PadDirection.SRC:
-            #             print("%s ist %s" % (padtemplate.name_template, pad))
-            #             my_pad = Gst.Pad.new_from_static_template(pad, 'src_0')
-            #             element.add_pad(my_pad)
-
-            for p, v in n[2].items():
-                if p == 'caps':
-                    caps = Gst.Caps.from_string(v)
+            for parameter, value in self.current_params.items():
+                if parameter == 'caps':
+                    caps = Gst.Caps.from_string(value)
                     self.element.set_property('caps', caps)
                 else:
-                    self.element.set_property(p, v)
-            # if n[0] == 'interleave':
+                    self.element.set_property(parameter, value)
+            # if self.current_element == 'interleave':
             #     if prev_name != 'queue':
             #         print("Error, you have to place a queue right before the interleaver")
             #         break
             self.pipeline.add(self.element)
 
-            if prev_name == "deinterleave":
+            if prev_name == "deinterleaver":
                 prev.connect("pad-added", self.on_new_deinterleave_pad)
-                # prev_factory = Gst.ElementFactory.find(prev_name)
-                # pads = prev_factory.get_static_pad_templates()
-                # for pad in pads:
-                #     padtemplate = pad.get()
-                #     print(pad)
-                #     if pad.direction == Gst.PadDirection.SRC and pad.presence == Gst.PadPresence.SOMETIMES:
-                #         # print("Found pad!")
-                #         # prev.request_pad(padtemplate)
-                #         print("%s ist %s" % (padtemplate.name_template, pad))
-                #         src_pad = Gst.Pad.new_from_static_template(pad, 'src_%d')
-                #         prev.add_pad(src_pad)
-
-
             else:
                 if prev:
                     link_status = prev.link(self.element)
                     if link_status == False:
-                        print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev_name, n[0]))
+                        print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev_name, self.current_element))
+            
             prev = self.element
-            prev_name = n[0]
+            prev_element = self.current_element
+            prev_name = self.current_name
             prev_gst_name = self.element.get_name()
+
+    def hallo(self, user_data):
+        print('Hallo')
         
+    def on_new_deinterleave_pad(self, element, pad):
+        self.audio_counter += 1
+        if self.audio_counter == self.audio_in_stream:
+            print("Connecting Audio %s to stream" % self.audio_in_stream)
+            # print("# New pad added #")
+            deint = pad.get_parent()
+            # print("deint: %s" % deint)
+            pipeline = deint.get_parent()
+            # print('pipe: %s' % pipeline)
+            # print(self.current_element)
+            follower = pipeline.get_by_name('d_follower')
+            # print("follower: %s" % follower)
+            dest_pad = self.element.get_static_pad('sink')
+            # print("dest pad: %s" % dest_pad)
+            link_status = deint.link(follower)
+            if link_status == False:
+                print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
+            else:
+                print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
+                ret = self.pipeline.set_state(Gst.State.PLAYING)
+                if ret == Gst.StateChangeReturn.FAILURE:
+                    print("ERROR: Unable to set the pipeline to the playing state")
+                    sys.exit(1)
+            self.pipeline.set_state(Gst.State.PLAYING)
+        # deinterleave = pad.get_parent()
+        # pipeline = deinterleave.get_parent()
+    
     # this function is called when an error message is posted on the bus
     def on_error(self, bus, msg):
         err, dbg = msg.parse_error()
