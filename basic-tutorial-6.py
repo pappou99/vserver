@@ -46,9 +46,10 @@ def print_pad_templates_information(factory):
     pads = factory.get_static_pad_templates()
     for pad in pads:
         padtemplate = pad.get()
-
+        print("Hole Pads")
         if pad.direction == Gst.PadDirection.SRC:
-            print("  SRC template:", padtemplate.name_template)
+            # print("  SRC template:", padtemplate.name_template)
+            pass
         elif pad.direction == Gst.PadDirection.SINK:
             print("  SINK template:", padtemplate.name_template)
         else:
@@ -74,6 +75,7 @@ def print_pad_templates_information(factory):
 
 def print_pad_capabilities(element, pad_name):
     # retrieve pad
+    print("hole Padeigenschaften")
     pad = element.get_static_pad(pad_name)
     if not pad:
         print("ERROR: Could not retrieve pad '{0:s}'".format(pad_name))
@@ -95,7 +97,7 @@ def main():
     Gst.init(sys.argv)
 
     # create the element factories
-    source_factory = Gst.ElementFactory.find("audiotestsrc")
+    source_factory = Gst.ElementFactory.find("deinterleave")
     sink_factory = Gst.ElementFactory.find("autoaudiosink")
     if not source_factory or not sink_factory:
         print("ERROR: Not all element factories could be created")
