@@ -230,11 +230,12 @@ class Main:
         for inp_no in range(0, settings.num_stream, 1):
             settings.streams.append(inp_no)
             settings.streams[inp_no] = Stream(inp_no, self.v_in, self.a_in)
+            settings.streams[inp_no].run()
             # settings.streams[inp_no].create(inp_no, self.v_in, self.a_in)
             # settings.streams[inp_no].pipeline.set_state(Gst.State.PLAYING)
 
         print(settings.streams)
-        self.build_ui()
+        # self.build_ui()
 
     # def __start__(self):
     #     Stream.run()
