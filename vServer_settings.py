@@ -3,12 +3,15 @@ class Settings:
     startport = 5001
     speed_preset = 3
     amplification = 4
-    muxer = ''
-    payloader = ''
-    v_enc = ''
-    a_enc = ''
+
+    video_in_name = 'Test picture generator' ## must be written like in possible inputs
+    audio_in_name = 'Test sound generator' # must be written like in possible inputs
+    muxer = ['mpegtsmux', {'alignment': 7}]
+    payloader = ['rtpmp2tpay', {}]
+    v_enc = ['avenc_mpeg4', {}]
+    a_enc = ['opusenc', {}]
     audio_channels_to_stream = 1
-    num_streams = ''
+    num_streams = 8
     streams = [None]
     sdp_info =[None]
     stream = ''

@@ -1,6 +1,5 @@
 #! /usr/bin/python3
-# parts found at
-# # https://isrv.pw/html5-live-streaming-with-mpeg-dash/python-gstreamer-script
+
 import sys
 
 import vServer_mqtt as mqtt

@@ -3,6 +3,7 @@
 import paho.mqtt.client as mqtt
 import threading
 from vServer_settings import Settings
+from vServer_stream import Stream
 
 class MqttCommands():
     play = b'play'
@@ -42,7 +43,13 @@ class MqttRemote(threading.Thread):
         if msg.payload == MqttCommands.play:
             # print(Settings.streams[video_no].__dict__)
             print("\nVideo {0} soll mit Audio {1} gestartet werden".format(video_no, audio_no))#
-            Settings.streams[video_no].audio_in_stream = audio_no
+            print(Settings.streams)
+            if Settings.streams[video_no] == None:
+                print('\nPreparing videostream %s\n' % video_no)
+                Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
+                Settings.streams[video_no].audio_in_stream = audio_no
             Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
+            print('Stopping video %s\n' % video_no)
             Settings.streams[video_no].stop()
+            print(Settings.streams)

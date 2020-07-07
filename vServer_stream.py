@@ -1,5 +1,8 @@
 #! /usr/bin/python3
+# parts found at
+# # https://isrv.pw/html5-live-streaming-with-mpeg-dash/python-gstreamer-script
 
+import sys
 import gi
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
@@ -71,8 +74,6 @@ class Stream(threading.Thread):
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]]
-            # ['jackaudiosink', None, {}]
-            # ['autoaudiosink', 'speaker', {}]
        ])
 
         # Jack sink
@@ -87,8 +88,6 @@ class Stream(threading.Thread):
 
         # Video input
         self.malm([
-    #         # ['decklinkvideosrc', None, {'connection': 1, 'mode': 12, 'buffer-size': 10, 'video-format': 1}],
-            # ['uridecodebin', None, {'uri' : 'http://download.blender.org/demo/movies/Sintel.2010.720p.mkv'}],
             videoinput,
             ['videoconvert', None, {}],
             ['videoscale', None, {}],
@@ -101,7 +100,7 @@ class Stream(threading.Thread):
 
         self.a_enc.link(getattr(self, 'muxer'))
 
-        print('Made the whole things, stream %s ready to play...' % self.devicename)
+        print('Made the whole things, stream %s ready to play...\n' % self.devicename)
         
         with open('Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
             dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
@@ -123,23 +122,6 @@ class Stream(threading.Thread):
                 self.createsdp(Settings.stream_ip, [parammap], self.streamnumber_readable)
                 for param,value in parammap.items():
                     print("%s = %s" % (param, value))
-    # finally:
-        # process.wait()
-        # self.caps = caps
-
-        # ###create sdp-file,
-        # media_res, media = GstSdp.SDPMedia.new()
-        # if media_res != 0:
-        #     print('Something failed in the SDP-Module')
-        # media.add_connection('IN', 'IPV4', Settings.stream_ip, 60, 1)
-        # GstSdp.sdp_media_set_media_from_caps(self.caps, media)
-        # sdp_res, sdp = GstSdp.SDPMessage.new()
-        # # self.sdp_info = sdp
-        # print('SDP element createt with status: %s' % sdp_res)
-        # sdp.set_session_name = self.devicename
-        # print(sdp.get_session_name())
-        # print(sdp.attributes)
-        #############
 
     def createsdp(self, hostname, streams, device):
         params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
@@ -174,7 +156,6 @@ class Stream(threading.Thread):
             f.write('\r\n'.join(sdp))
 
     def run(self):
-        # Stream.lock.acquire()
         ###connect messages to read out caps for sdpfile
         payloader = self.pipeline.get_by_name('payloader')
         for pad in payloader.srcpads:
@@ -192,9 +173,7 @@ class Stream(threading.Thread):
         print('\nWriting dot file for debug information\n')
         with open('Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
             dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-        # wait until error, EOS or State-Change
-        # terminate = False
-        # buus = self.pipeline.get_bus()
+
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
             print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
@@ -206,49 +185,11 @@ class Stream(threading.Thread):
             dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         while True:
-            # try:
-            # msg = buus.timed_pop_filtered(
-            #     0.5 * Gst.SECOND,
-            #     Gst.MessageType.ERROR | Gst.MessageType.EOS | Gst.MessageType.STATE_CHANGED)
-
-            # if msg:
-            #     t = msg.type
-            #     if t == Gst.MessageType.ERROR:
-            #         connect.msg()
-            #         err, dbg = msg.parse_error()
-            #         print("ERROR:", msg.src.get_name(), ":", err.message)
-            #         if dbg:
-            #             print("Debug information:", dbg)
-            #         terminate = True
-            #     elif t == Gst.MessageType.EOS:
-            #         print("End-Of-Stream reached")
-            #         terminate = True
-            #     elif t == Gst.MessageType.STATE_CHANGED:
-            #         # we are only interested in state-changed messages from the
-            #         # pieline
-            #         if msg.src == self.pipeline:
-            #             old, new, pending = msg.parse_state_changed()
-            #             print("%s state changged from %s to %s" 
-            #             % (self.pipeline.name, Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
-
-                        
-            #     else:
-            #         # should not get here
-            #         print("ERROR: unexpected message received")
-
             is_killed = self._stop_signal.wait(1)
             if is_killed:
                 print('killed')
+                self.stop()
                 break
-                    
-            # except KeyboardInterrupt:
-            #     terminate = True
-
-
-        # self.pipeline.set_state(Gst.State.NULL)
-
-        
-        # Stream.lock.release()
 
     def stop(self):
         # self._stop_event.set()
@@ -259,6 +200,7 @@ class Stream(threading.Thread):
         follower = self.pipeline.get_by_name('d_follower')
         deint.unlink(follower)
         self._stop_signal.set()
+        Settings.streams[self.streamnumber_readable] = None
         # self.mainloop.quit()
 
     def do_keyframe(self, user_data):
@@ -274,14 +216,6 @@ class Stream(threading.Thread):
         prev = None
         prev_name = None
         for n in to_add:
-            # print(n)
-                    
-            
-            # element = Gst.ElementFactory.make(self.current_element, self.current_name)
-            # if not element:
-            #     raise Exception('cannot create element {}'.format(self.current_element))
-
-            ###neuer Code
             self.current_element = n[0]
             self.current_name = n[1]
             self.current_params = n[2]
@@ -293,23 +227,7 @@ class Stream(threading.Thread):
             self.element = factory.make(self.current_element, self.current_name)
             if not self.element:
                 raise Exception('########## ERROR! cannot create element {} ##########\n'.format(self.current_element))
-                break
-            # if self.current_element == "deinterleave":
-            #     pads = factory.get_static_pad_templates()
-            #     for pad in pads:
-            #         padtemplate = pad.get()
-            #         print(pad)
-            #         if pad.direction == Gst.PadDirection.SRC and pad.presence == Gst.PadPresence.SOMETIMES:
-            #             print("Found pad!")
-            #             element.request_pad(padtemplate)
-            #             print("%s ist %s" % (padtemplate.name_template, pad))
-            #             my_pad = Gst.Pad.new_from_static_template(pad, 'src_1')
-            #             element.add_pad(my_pad)
-            #             # my_pad.set_active
-            #             # peer = my_pad.get_peer
-            #             # print("Peer {0}".format(peer))
-            # ###bis dahin
-            
+                break            
 
             if self.current_name: setattr(self, self.current_name, self.element)
 
@@ -319,10 +237,7 @@ class Stream(threading.Thread):
                     self.element.set_property('caps', caps)
                 else:
                     self.element.set_property(parameter, value)
-            # if self.current_element == 'interleave':
-            #     if prev_name != 'queue':
-            #         print("Error, you have to place a queue right before the interleaver")
-            #         break
+
             self.pipeline.add(self.element)
 
             if prev_name == "deinterleaver":
