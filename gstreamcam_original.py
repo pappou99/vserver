@@ -20,6 +20,7 @@ def createsdp(hostname, streams):
 
     # add individual streams to SDP
     for stream in streams:
+        print(stream)
         sdp.append("m=%s %s RTP/AVP %s" % (stream['media'], stream['port'], stream['payload']))
         sdp.append('c=IN IP4 %s' % hostname)
         sdp.append("a=rtpmap:%s %s/%s" % (stream['payload'], stream['encoding-name'], stream['clock-rate']))
@@ -51,7 +52,7 @@ def main(arguments):
                 'openh264' : (b'GstRtpH264Pay', 'openh264enc', 'rtph264pay')}
     rtppay = encoders[arguments.codec][0]
     port = arguments.port
-    arglist = [gstreamer, "-v", "ksvideosrc", "device_index=%d" % arguments.camera, "!", "videoconvert", "!", "videoscale", "!", "video/x-raw,width=800,height=600", "!",
+    arglist = [gstreamer, "-v", "videotestsrc", "!", "videoconvert", "!", "videoscale", "!", "video/x-raw,width=800,height=600", "!",
                     encoders[arguments.codec][1],  "!", encoders[arguments.codec][2], "!", "udpsink", "host=%s" % hostname, "port=%d" % port]
     if arguments.debug:
         print("Calling gstreamer:\n"," ".join(arglist))
@@ -66,6 +67,7 @@ def main(arguments):
     try:
         p = re.compile(rb'/GstPipeline:pipeline\d+/%b:\w+\d+.GstPad:src: caps = (.+)' % rtppay)
         for line in process.stdout:
+            # print('###%s' % line)
             pattern = p.search(line)
             if pattern and not patternGenerated:
                 parameters = re.findall(rb'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', pattern.groups()[0])
@@ -87,10 +89,10 @@ def main(arguments):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("hostname", help="hostname or IP address of the destination")
-    parser.add_argument("--sdp", help="generates SDP file for the stream (defaults to false)", action="store_true")
-    parser.add_argument("--debug", help="shows command line in use to call gstreamer", action="store_true")
+    parser.add_argument("--sdp", help="generates SDP file for the stream (defaults to false)", action="store_true", default=1)
+    parser.add_argument("--debug", help="shows command line in use to call gstreamer", action="store_true", default=1)
     parser.add_argument("--port", "-p", help="port (defaults to 5000)", type=int, default=5000)
-    parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264'], default='openh264')
+    parser.add_argument("--codec", help="chooses encoder (defaults to openh264)", choices=['vp8', 'h264', 'openh264'], default='h264')
     parser.add_argument("--camera", help="Device id (defaults to 0)", type=int, default=0)
 
     args = parser.parse_args()

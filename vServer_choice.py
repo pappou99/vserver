@@ -57,7 +57,7 @@ class SelectThe:
                 'ts'    :   [
                     ['mpegtsmux', {'alignment' : 7}],    
                     ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], 
-                    ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'], 
+                    ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'],
                     ['rtpmp2tpay', {}], 
                     b'GstRTPMP2TPay'
                     ],

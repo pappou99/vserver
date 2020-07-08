@@ -45,12 +45,13 @@ class Stream(threading.Thread):
         if not self.pipeline:
             print("ERROR: Pipeline could not be created")
         self.clock = self.pipeline.get_pipeline_clock()
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect('message::error', self.on_error)
-        bus.connect("message::eos", self.on_eos)
-        bus.connect("message::state-changed", self.hallo)
-        bus.connect("message::application", self.on_application_message)
+        self.bus = self.pipeline.get_bus()
+        self.bus.add_signal_watch()
+        self.bus.connect('message::error', self.on_error)
+        self.bus.connect("message::eos", self.on_eos)
+        self.bus.connect("message::state-changed", self.hallo)
+        self.bus.connect("message::application", self.on_application_message)
+        
 
         inp = PossibleInputs()
         in_options = inp.Generate(video_in_name, audio_in_name, streamnumber)
@@ -102,11 +103,13 @@ class Stream(threading.Thread):
 
         print('Made the whole things, stream %s ready to play...\n' % self.devicename)
         
-        with open('Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
+        with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
             dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
         
 
     def note_caps(self, pad, args):
+        print('Pad: %s' % pad)
+        print('Args: %s' % args)
         print('Caps payloader:')
         caps = pad.query_caps(None)
         print(caps)
@@ -124,9 +127,10 @@ class Stream(threading.Thread):
                     print("%s = %s" % (param, value))
 
     def createsdp(self, hostname, streams, device):
+        print('\n##########\nSourcepad in element payloader created\n##########\n')
         params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
         sdp = ['v=0']
-        sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, hostname))
+        sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, Settings.stream_ip))
         sdp.append('t=0 0')
         sdp.append('s=GST2SDP')
 
@@ -134,6 +138,7 @@ class Stream(threading.Thread):
 
         # add individual streams to SDP
         for stream in streams:
+            print('Stream: %s' % stream)
             sdp.append("m=%s %s RTP/AVP %s" % (stream['media'], stream['port'], stream['payload']))
             sdp.append('c=IN IP4 %s' % hostname)
             sdp.append("a=rtpmap:%s %s/%s" % (stream['payload'], stream['encoding-name'], stream['clock-rate']))
@@ -148,12 +153,13 @@ class Stream(threading.Thread):
                         fmtp.append(" %s=%s;" % (param, value))
             fmtp = ''.join(fmtp)
             sdp.append(fmtp)
-            sdp.append("a=control:track%d" % streamnumber)
-            streamnumber += 1
-
+            sdp.append("a=control:track%d" % 1)
+            # streamnumber += 1
+        sdp_str = ('\r\n'.join(sdp))
         # save sdp
-        with open('Video%d.sdp' % device,'w') as f:
-            f.write('\r\n'.join(sdp))
+        with open('sdp/Video%d.sdp' % device,'w') as sdp_file:
+            sdp_file.write('\r\n'.join(sdp))
+        print('write file to %s' % str(sdp_file))
 
     def run(self):
         ###connect messages to read out caps for sdpfile
@@ -171,7 +177,7 @@ class Stream(threading.Thread):
         follower = self.pipeline.get_by_name('d_follower')
         deint.link_pads('src_%s' % (self.audio_in_stream-1), follower, None)
         print('\nWriting dot file for debug information\n')
-        with open('Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
+        with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
             dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         ret = self.pipeline.set_state(Gst.State.PLAYING)
@@ -181,7 +187,7 @@ class Stream(threading.Thread):
         
         
         print('\nWriting dot file for debug information\n')
-        with open('Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
+        with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
             dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         while True:
@@ -254,7 +260,7 @@ class Stream(threading.Thread):
             prev_gst_name = self.element.get_name()
 
     def hallo(self, user_data):
-        print('Hallo')
+        print('#########################################################################\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++Hallo')
         
     def on_new_deinterleave_pad(self, element, pad):
         self.audio_counter += 1

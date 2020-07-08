@@ -1,5 +1,5 @@
 class Settings:
-    stream_ip = 'localhost'#'239.230.225.255'
+    stream_ip = '239.230.225.255'
     startport = 5001
     speed_preset = 3
     amplification = 4
@@ -16,6 +16,6 @@ class Settings:
     sdp_info =[None]
     stream = ''
 
-    mqtt_server = 'localhost'
-    mpqtt_port = 1883
+    mqtt_server = '10.82.209.45'
+    mqtt_port = 1883
     mqtt_topic = ['gvg-grp', 'vserv1', 'video']
