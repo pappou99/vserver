@@ -8,8 +8,8 @@ class Settings:
     speed_preset = 3
     amplification = 4
 
-    video_in_name = 'Test picture generator' ## must be written like in possible inputs
-    audio_in_name = 'Test sound generator' # must be written like in possible inputs
+    video_in_name = 'Decklink-Card' ## must be written like in possible inputs
+    audio_in_name = 'Decklink-Card' # must be written like in possible inputs
     videowidth = '1920'
     videoheight = '1080'
     
