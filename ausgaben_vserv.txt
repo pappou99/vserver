@@ -1,7 +1,0 @@
-media = video
-port = 5001
-payload = 33
-clock-rate = 90000
-encoding-name = MP2T
-Caps payloader:
-application/x-rtp, media=(string)video, payload=(int)33, clock-rate=(int)90000, encoding-name=(string)MP2T; application/x-rtp, media=(string)video, payload=(int)[ 96, 127 ], clock-rate=(int)90000, encoding-name=(string)MP2T
