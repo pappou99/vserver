@@ -45,4 +45,5 @@ class Main:
         remote.start()
         # self.ui()
         
-main = Main()
+if __name__ == '__main__':
+    main = Main()
