@@ -21,10 +21,20 @@ import threading
 
 Gst.init(None)
 
+
 class Stream(threading.Thread):
     lock = threading.Lock()
 
     def __init__(self, streamnumber, video_in_name, audio_in_name):
+
+        if not Gst.debug_is_active():
+            Gst.debug_set_active(True)
+            level = Gst.debug_get_default_threshold()
+            if level < Gst.DebugLevel.ERROR:
+                Gst.debug_set_default_threshold(Gst.DebugLevel.WARNING)
+            Gst.debug_add_log_function(self.on_debug, None)
+            Gst.debug_remove_log_function(Gst.debug_log_default)
+
         threading.Thread.__init__(self)
         self._stop_signal = threading.Event()
         self.audio_counter = 0
@@ -405,3 +415,10 @@ class Stream(threading.Thread):
             # if the message is the "tags-changed", update the stream info in
             # the GUI
             self.analyze_streams()
+
+    def on_debug(self, category, level, dfile, dfctn, dline, source, message, user_data):
+        if source:
+            print('Debug {} {}: {}'.format(Gst.DebugLevel.get_name(level), source.name, message.get()))
+        else:
+            print('Debug {}: {}'.format(
+                Gst.DebugLevel.get_name(level), message.get()))
