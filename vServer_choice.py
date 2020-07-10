@@ -1,5 +1,7 @@
 #! /usr/bin/python3
 
+from vServer_settings import Settings
+
 class PossibleInputs:
   
     def List(self, device):
@@ -8,7 +10,7 @@ class PossibleInputs:
                     ['decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True}]
                ],
                 'Test picture generator' : [
-                    ['videotestsrc', None, {}]
+                    ['videotestsrc', None, {'is-live' : True}]
               ]
             }
         a_input_list = {
@@ -16,7 +18,7 @@ class PossibleInputs:
                     ['decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : 8, 'do-timestamp' : True}]
               ],
                 'Test sound generator' : [
-                    ['audiotestsrc', None, {'is-live' : 1, 'do-timestamp' : True, 'volume' : 0.01}] #, '!', 'audio/x-raw,channels=8'
+                    ['audiotestsrc', None, {'is-live' : 1, 'do-timestamp' : True}] #, '!', 'audio/x-raw,channels=8'
               ]
             }
         return v_input_list, a_input_list
@@ -38,7 +40,9 @@ class PossibleInputs:
         # print("Possible Inputs: %s" % possible_v_inputs)
         in_a_choice = SelectThe.input(self, "Audio Input", possible_a_inputs, a_parameter)
         # print(in_a_choice)
-        return in_v_choice, in_a_choice
+        # return in_v_choice, in_a_choice
+        Settings.video_in_name = in_v_choice
+        Settings.audio_in_name = in_a_choice
 
     
     def Generate(self, v_inputchoice, a_inputchoice, device):

@@ -90,9 +90,10 @@ class Stream(threading.Thread):
         # Video input
         self.malm([
             videoinput,
+            ['clockoverlay', None, {'halignment' : 'right', 'valignment' : 'top', 'text' : 'München', 'shaded-background' : True, 'font-desc' : 'Sans, 12'}],
             ['videoconvert', None, {}],
             ['videoscale', None, {}],
-            ['capsfilter', None, {'caps': 'video/x-raw, width=1920, height=1080'}],
+            ['capsfilter', None, {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
             [Settings.muxer[0], 'muxer', Settings.muxer[1]],
             [Settings.payloader[0], 'payloader', Settings.payloader[1]],
