@@ -7,6 +7,7 @@ import vServer_mqtt as mqtt
 from vServer_choice import SelectThe, PossibleInputs
 from vServer_stream import Stream
 from vServer_settings import Settings
+from vServer_benchmark import Benchmark
 
 class Main:
     def __init__(self):
@@ -30,6 +31,8 @@ class Main:
         # self.a_in = my_inputs[1]
         print("Audio: %s"  % Settings.audio_in_name)
         print("Creating streams\n")
+
+        Benchmark()
 
         for inp_no in range(0, Settings.num_stream, 1):
             stream_readable = inp_no+1
