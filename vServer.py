@@ -40,12 +40,4 @@ class Main:
         remote.start()
         # self.ui()
         
-    def ui(self):
-        ui = Ui()
-        for inp_no in range(0, Settings.num_stream, 1):
-            ui.controls_per_stream(stream_readable)
-        ui.show()
-
-
-
 main = Main()
