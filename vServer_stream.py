@@ -90,6 +90,7 @@ class Stream(threading.Thread):
         # Video input
         self.malm([
             videoinput,
+            ['textoverlay', None, {'text' : '%s:%s' % (Settings.hostname, self.devicename), 'valignment' : 'top', 'halignment' : 'left', 'font-desc' : 'Sans, 12'}],
             ['clockoverlay', None, {'halignment' : 'right', 'valignment' : 'top', 'text' : 'München', 'shaded-background' : True, 'font-desc' : 'Sans, 12'}],
             ['videoconvert', None, {}],
             ['videoscale', None, {}],

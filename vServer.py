@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 import sys
+import socket
 
 import vServer_mqtt as mqtt
 from vServer_choice import SelectThe, PossibleInputs
@@ -9,6 +10,7 @@ from vServer_settings import Settings
 
 class Main:
     def __init__(self):
+        Settings.hostname = socket.gethostname()
         select = SelectThe()
         Settings.muxer = select.muxer
         print('Muxer: %s' % Settings.muxer)
