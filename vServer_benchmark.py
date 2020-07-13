@@ -13,8 +13,9 @@ class Benchmark:
         day = datetime.date.today()
         t = time.localtime()
         now = str(time.strftime("%H:%M:%S", t))
+        cwd = os.getcwd()
 
-        path = '/home/administrator/pappou/gstreamwebcam/benchmark/logging/'
+        path = '%s/benchmark/logging/' % cwd
         filename = '%s_%s_%s_%s.nmon' % (v_enc_name, a_enc_name, day, now)
         logfile = '%s%s' % (path, filename)
         # mode = 'a' if os.path.exists(logfile) else 'w'

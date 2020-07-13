@@ -19,8 +19,10 @@ class Settings:
     payloader = ['rtpmp2tpay', {}]
     v_enc = ['avenc_mpeg4', {}]
     a_enc = ['opusenc', {}]
-    audio_channels_to_stream = 1
     num_streams = 8
+    
+    audio_channels_to_stream = 1
+    
     streams = [None]
     sdp_info =[None]
     stream = ''
