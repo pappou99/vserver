@@ -41,7 +41,6 @@ class MqttRemote(threading.Thread):
         # print(topics)
         video_no = int(topics[-3])
         audio_no = int(topics[-1])
-        Settings.streams[video_no].audio_in_stream = audio_no
         if msg.payload == MqttCommands.play:
             # print(Settings.streams[video_no].__dict__)
             print("\nVideo {0} soll mit Audio {1} gestartet werden".format(video_no, audio_no))#
@@ -49,6 +48,7 @@ class MqttRemote(threading.Thread):
             if Settings.streams[video_no] == None:
                 print('\nPreparing videostream %s\n' % video_no)
                 Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
+            Settings.streams[video_no].audio_in_stream = audio_no
             Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
             if Settings.streams[video_no] != None:
