@@ -7,3 +7,4 @@ __pycache__/gstream_choice_inanity.cpython-36.pyc
 *.svg
 *secrets*
 benchmark/*
+.~lock.codecs.ods#
