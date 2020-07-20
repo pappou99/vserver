@@ -21,6 +21,7 @@ class Settings:
     a_enc = ['opusenc', {}]
     num_streams = 8
     
+    audio_channels_to_madi = 8
     audio_channels_to_stream = 1
     
     streams = [None]

@@ -12,6 +12,7 @@ from gi.repository import GstSdp
 
 from vServer_settings import Settings as Settings
 from vServer_choice import PossibleInputs
+from vServer_jackconnect import Jacking
 
 import re
 from collections import defaultdict
@@ -43,11 +44,11 @@ class Stream(threading.Thread):
         self.port = Settings.startport+streamnumber
         self.streamnumber_readable = streamnumber+1
         self.audio_in_stream = 1
-        print('Port: %s' % self.port)
+        # print('Port: %s' % self.port)
         self.devicename = 'video_%s' % str(self.streamnumber_readable)
         self.patternGenerated = False
         location = Settings.stream_ip# + self.devicename
-        print('Uri: %s' % location)
+        # print('Uri: %s' % location)
         # print('Streamnumber: %s' % self.devicename)
         # self.mainloop = GLib.MainLoop()
         # self.mainloop = GLib.MainLoop.new(None, False)
@@ -93,7 +94,7 @@ class Stream(threading.Thread):
             ['audioconvert', None, {}],
             ['audioresample', None, {}],
             ['queue', None, {}],
-            ['jackaudiosink', None, {'connect' : 0, 'client-name' : self.devicename}]
+            ['jackaudiosink', 'jacksink', {'connect' : 0, 'client-name' : self.devicename}]
        ])
         self.audio.link(getattr(self, 'jack'))
 
@@ -113,10 +114,10 @@ class Stream(threading.Thread):
 
         self.a_enc.link(getattr(self, 'muxer'))
 
-        print('Made the whole things, stream %s ready to play...\n' % self.devicename)
+        # print('Made the whole things, stream %s ready to play...\n' % self.devicename)
         
-        with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
-            dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        # with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
+        #     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
         
 
     def note_caps(self, pad, args):
@@ -188,9 +189,9 @@ class Stream(threading.Thread):
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
         deint.link_pads('src_%s' % (self.audio_in_stream-1), follower, None)
-        print('\nWriting dot file for debug information\n')
-        with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
-            dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        # print('\nWriting dot file for debug information\n')
+        # with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
+        #     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
@@ -201,6 +202,8 @@ class Stream(threading.Thread):
         print('\nWriting dot file for debug information\n')
         with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
             dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+
+        Jacking(self.streamnumber_readable, self.devicename)
 
         while True:
             is_killed = self._stop_signal.wait(1)
@@ -258,6 +261,10 @@ class Stream(threading.Thread):
 
             self.pipeline.add(self.element)
 
+            if self.current_name == 'jacksink':
+                # print('===============================================================')
+                self.element.connect("no-more-pads", self.on_new_jackaudiosink_pad)
+
             if prev_name == "deinterleaver":
                 prev.connect("pad-added", self.on_new_deinterleave_pad)
             else:
@@ -287,32 +294,19 @@ class Stream(threading.Thread):
             # print(self.current_element)
             follower = pipeline.get_by_name('d_follower')
             follower_pads = follower.get_pad_template_list()
-            print('Pads: %s' % follower_pads)
-
-            # for pad in follower_pads:
-            #     # padtemplate = pad.get()
-            #     print(pad)
-            #     if pad.direction == Gst.PadDirection.SINK:
-            #         print("Found pad!")
-            #         # element.request_pad(padtemplate)
-            #         print("%s ist %s" % (pad.name_template, pad))
-                    # my_pad = Gst.Pad.new_from_static_template(pad, 'src_1')
-                    # element.add_pad(my_pad)
-                    # my_pad.set_active
-                    # peer = my_pad.get_peer
-                    # print("Peer {0}".format(peer))
+            # print('Pads: %s' % follower_pads)
 
             # print("follower: %s" % follower)
             dest_pad = follower.get_static_pad('sink')
-            print(dest_pad)
-            print('Linkable? %s' % pad.can_link(dest_pad))
+            # print(dest_pad)
+            # print('Linkable? %s' % pad.can_link(dest_pad))
             # print("dest pad: %s" % dest_pad)
             # link_status = deint.link(follower)
             link_status = pad.link_maybe_ghosting(dest_pad)
             if link_status == False:
                 print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
             else:
-                print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
+                # print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
                 ret = self.pipeline.set_state(Gst.State.PLAYING)
                 if ret == Gst.StateChangeReturn.FAILURE:
                     print("ERROR: Unable to set the pipeline to the playing state")
@@ -320,6 +314,12 @@ class Stream(threading.Thread):
             self.pipeline.set_state(Gst.State.PLAYING)
         # deinterleave = pad.get_parent()
         # pipeline = deinterleave.get_parent()
+
+
+    def on_new_jackaudiosink_pad(self, element, pad):
+        print('===============================================================')
+        
+
     
     # this function is called when an error message is posted on the bus
     def on_error(self, bus, msg):

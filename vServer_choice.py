@@ -25,7 +25,7 @@ class PossibleInputs:
 
     def Define(self):
         params = PossibleInputs.List(self, 1)
-        print (params)
+        # print (params)
         v_parameter = params[0]
         possible_v_inputs = []
         for option in v_parameter.items():

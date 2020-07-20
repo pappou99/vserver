@@ -38,9 +38,9 @@ class Main:
             stream_readable = inp_no+1
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
-            # Settings.streams[stream_readable].start()# instantly play video for testing
+            Settings.streams[stream_readable].start()# instantly play video for testing
         
-        print(Settings.streams)
+        # print(Settings.streams)
         remote = mqtt.MqttRemote()
         remote.start()
         # self.ui()
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         main = Main()
     except KeyboardInterrupt:
         ls = len(Settings.streams)
-        print ('############# Länge: %s' % ls)
+        # print ('############# Länge: %s' % ls)
         for stream in range(1, ls):
             print('###########################################################################\n%s' % stream)
             Settings.streams[stream].stop()
