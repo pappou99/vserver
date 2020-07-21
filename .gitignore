@@ -9,3 +9,5 @@ __pycache__/gstream_choice_inanity.cpython-36.pyc
 benchmark/*
 .~lock.codecs.ods#
 codecs.ods
+video_udp.py
+logs/*

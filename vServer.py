@@ -2,6 +2,7 @@
 
 import sys
 import socket
+import select as sel
 
 import vServer_mqtt as mqtt
 from vServer_choice import SelectThe, PossibleInputs
@@ -12,17 +13,23 @@ from vServer_benchmark import Benchmark
 class Main:
     def __init__(self):
         Settings.hostname = socket.gethostname()
-        select = SelectThe()
-        Settings.muxer = select.muxer
+
+        print('To use interactive mode: press any key')
+        interactive, b, c = sel.select( [sys.stdin], [], [], 5 )
+
+        if (interactive):
+            select = SelectThe()
+            Settings.muxer = select.muxer
+            Settings.payloader = select.payloader
+            Settings.v_enc = select.Video()
+            Settings.a_enc = select.Audio()
+            Settings.num_streams = select.Number()
+
         print('Muxer: %s' % Settings.muxer)
-        Settings.payloader = select.payloader
         print('Payloader: %s' % Settings.payloader)
-        Settings.v_enc = select.Video()
         print("Videoencoder: %s" % Settings.v_enc)
-        Settings.a_enc = select.Audio()
         print("Audioencoder: %s" % Settings.a_enc)
-        Settings.num_stream = select.Number()
-        print("Number of Streams: %s" % Settings.num_stream)
+        print("Number of Streams: %s" % Settings.num_streams)
 
         # my_inputs = PossibleInputs.Define(PossibleInputs)
         # PossibleInputs.Define(PossibleInputs)#disable this line for input parameters set in Settings
@@ -34,11 +41,11 @@ class Main:
 
         Benchmark()
 
-        for inp_no in range(0, Settings.num_stream, 1):
+        for inp_no in range(0, Settings.num_streams, 1):
             stream_readable = inp_no+1
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
-            Settings.streams[stream_readable].start()# instantly play video for testing
+            # Settings.streams[stream_readable].start()# instantly play video for testing
         
         # print(Settings.streams)
         remote = mqtt.MqttRemote()

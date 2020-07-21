@@ -154,8 +154,8 @@ class SelectThe:
 
     def Number(self):
         print('\nHow much streams to create?\nChoose a number from 1 to 8\n')
-        num_stream = int(input())
-        return num_stream
+        num_streams = int(input())
+        return num_streams
 
     def codec(self, name, cod_muxer_can_mux, encoder_list):
         print('\nPlease choose your %s:\n' % name)

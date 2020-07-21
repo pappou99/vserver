@@ -45,7 +45,7 @@ class Ui:
 
     # this function is called when the main window is closed
     def on_delete_event(self, widget, event):
-        for stream in range(0, Settings.num_stream, 1):
+        for stream in range(0, Settings.num_streams, 1):
             Settings.streams[stream].pipeline.set_state(Gst.State.READY)
         Gtk.main_quit()
 

@@ -3,6 +3,7 @@
 # # https://isrv.pw/html5-live-streaming-with-mpeg-dash/python-gstreamer-script
 
 import sys
+import time
 import gi
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
@@ -32,7 +33,7 @@ class Stream(threading.Thread):
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(Gst.DebugLevel.WARNING)
+                Gst.debug_set_default_threshold(Gst.DebugLevel.FIXME)
             Gst.debug_add_log_function(self.on_debug, None)
             Gst.debug_remove_log_function(Gst.debug_log_default)
 
@@ -76,6 +77,10 @@ class Stream(threading.Thread):
         # Audio source
         self.malm([
             audioinput,
+            ['queue', None, {}],
+            ['audioresample', None, {}],
+            ['audioconvert', None, {}],
+            ['audiorate', None, {}],
             ['capsfilter', None, {'caps' : 'audio/x-raw,channels=8,rate=48000'}],
             ['tee', 'audio', {}],
             ['deinterleave', 'deinterleaver', {}],
@@ -85,6 +90,7 @@ class Stream(threading.Thread):
             ['interleave', None, {'channel-positions-from-input' : True}],
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
+            ['audiorate', None, {}],
             [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]]
        ])
 
@@ -189,6 +195,7 @@ class Stream(threading.Thread):
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
         deint.link_pads('src_%s' % (self.audio_in_stream-1), follower, None)
+        time.sleep(5)
         # print('\nWriting dot file for debug information\n')
         # with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
         #     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
@@ -199,10 +206,14 @@ class Stream(threading.Thread):
             # sys.exit(1)
         
         
-        print('\nWriting dot file for debug information\n')
-        with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
-            dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        # print('\nWriting dot file for debug information\n')
+        # with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
+        #     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        if self.streamnumber_readable == 1:
+            with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber_readable, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
+                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
+        time.sleep(5)
         Jacking(self.streamnumber_readable, self.devicename)
 
         while True:
@@ -417,8 +428,18 @@ class Stream(threading.Thread):
             self.analyze_streams()
 
     def on_debug(self, category, level, dfile, dfctn, dline, source, message, user_data):
+        # print('Category: %s' % category)
+        # print('Level: %s' % level)
+        # print('dfile: %s' % dfile)
+        # print('dfctn: %s' % dfctn)
+        # print('dline: %s' % dline)
+        # print('source: %s' % source)
+        # print('message: %s' % message)
+        # print('user_data: %s' % user_data)
         if source:
-            print('Debug {} {}: {}'.format(Gst.DebugLevel.get_name(level), source.name, message.get()))
+            # print('Debug {} {}: {}'.format(Gst.DebugLevel.get_name(level), source.name, message.get()))
+            pass
         else:
-            print('Debug {}: {}'.format(
-                Gst.DebugLevel.get_name(level), message.get()))
+            # print('Debug {}: {}'.format(
+                # Gst.DebugLevel.get_name(level), message.get()))
+            pass

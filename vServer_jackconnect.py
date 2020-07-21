@@ -12,6 +12,8 @@ acoustical feedback!
 import sys
 import signal
 import os
+import time
+
 import jack
 import threading
 from vServer_settings import Settings
@@ -32,7 +34,9 @@ class Jacking:
             del playback[1]
             del playback[0]
             real_playback = playback[(videonumber-1)*Settings.audio_channels_to_madi:videonumber*Settings.audio_channels_to_madi]
+            print('%s' % real_playback)
             if not real_playback:
                 raise RuntimeError("No physical playback ports")
             for src, dest in zip(capture, real_playback):
                 client.connect(src, dest)
+                time.sleep(1)
