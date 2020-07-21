@@ -17,7 +17,7 @@ class Settings:
     
     muxer = ['mpegtsmux', {'alignment': 7}]
     payloader = ['rtpmp2tpay', {}]
-    v_enc = ['avenc_mpeg4', {}]
+    v_enc = ['avenc_mpeg1video', {}]
     a_enc = ['opusenc', {}]
     num_streams = 8
     
