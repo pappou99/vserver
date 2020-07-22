@@ -60,41 +60,48 @@ class SelectThe:
                 'Choose nothing and exit' : '',
                 'ts'    :   [
                     ['mpegtsmux', {'alignment' : 7}],    
-                    ['mpeg1','mpeg2', 'mpeg4', 'x-dirac', 'x-h264', 'x-h265'], 
-                    ['mpeg1', 'mpeg2', 'mpeg4', 'x-lpcm', 'x-ac3', 'x-dts', 'x-opus'],
+                    ['video/mpeg_v1','video/mpeg_v2', 'video/mpeg_v4', 'video/x-dirac', 'video/x-h264', 'video/x-h265'], 
+                    ['audio/mpeg_v1', 'audio/mpeg_2', 'audio/mpeg_4', 'audio/x-lpcm', 'audio/x-ac3', 'audio/x-dts', 'audio/x-opus'],
                     ['rtpmp2tpay', {}], 
                     b'GstRTPMP2TPay'
                     ],
+                'webm'    :   [
+                    ['matroskamux', {'streamable' : True}],    
+                    ['video/mpeg_v1','video/mpeg_v2', 'video/mpeg_v4', 'video/x-dirac', 'video/x-h264', 'video/x-h265'], 
+                    ['audio/mpeg_v1', 'audio/mpeg_2', 'audio/mpeg_4', 'audio/x-lpcm', 'audio/x-ac3', 'audio/x-dts', 'audio/x-opus'],
+                    ['', {}], 
+                    b''
+                    ],
                 'flv'   :   [
                     ['flvmux', {'streamable' : True}], 
-                    ['x-flash-video', 'x-flash-screen', 'x-vp6-flash', 'x-vp6-alpha', 'x-h264'], 
-                    ['x-adpcm', 'mpeg1', 'mpeg3', 'mpeg4', 'mpeg2', 'x-nellymoser', 'x-raw', 'x-alaw', 'x-mulaw', 'x-speex'], 
+                    ['x-flash-video', 'x-flash-screen', 'x-vp6-flash', 'x-vp6-alpha', 'video/x-h264'], 
+                    ['x-adpcm', 'audio/mpeg_v1', 'mpeg3', 'audio/mpeg_4', 'audio/mpeg_2', 'x-nellymoser', 'x-raw', 'x-alaw', 'x-mulaw', 'x-speex'], 
                     [], 
                     ''
                     ]
             }
         self.v_enc_list = {
                 # name    :   [[codec1, codec1_option1, opt2, ...], [codec2, codec1_option1]]
-                'mpeg1' :   [
+                'video/mpeg_v1' :   [
                             ['avenc_mpeg1video', {}, 'mpegvideoparse', {}]
                           , ['mpeg2enc', {'format' : '0'}, 'mpegvideoparse', {}] 
                            ],
-                'mpeg2' :   [
+                'video/mpeg_v2' :   [
                             ['avenc_mpeg2video', {}, 'mpegvideoparse', {}]
                           , ['mpeg2enc', {}, 'mpegvideoparse', {}] 
                            ],
-                'mpeg4' :   [
+                'video/mpeg_v4' :   [
                             ['avenc_mpeg4', {}, 'mpeg4videoparse', {}] 
                            ],
-                # 'x-dirac' :   [['']],
-                'x-h264'  :   [
+                # 'video/x-dirac' :   [['']],
+                'video/x-h264'  :   [
                                 ['avenc_h264_omx', {}, 'h264parse', {}]
                               , ['nvh264enc', {}, 'h264parse', {}]
                               , ['openh264enc', {}, 'h264parse', {}]
                               , ['vaapih264enc', {}, 'h264parse', {}]
                               , ['x264enc', {}, 'h264parse', {}] 
                                ],
-                'x-h265'  :   [
+                'video/x-h265'  :   [
                                 ['nvh265enc', {}, 'h265parse', {}]
                               , ['vaapih265enc', {}, 'h265parse', {}]
                               , ['x265enc', {}, 'h265parse', {}] 
@@ -102,15 +109,15 @@ class SelectThe:
             }
 
         self.a_enc_list = {
-                'mpeg1' :   [
+                'audio/mpeg_v1' :   [
                             ['lamemp3enc', {}, 'mpegaudioparse', {}] 
                            ],
-                # 'mpeg2' : [['faac', {}]],
-                # 'mpeg4' : [['faac', {}]],
-                # 'x-lpcm' : [['', {}]],
-                # 'x-ac3' : [['', {}]],
-                # 'x-dts' : [['', {}]],
-                'x-opus' :  [
+                # 'audio/mpeg_2' : [['faac', {}]],
+                # 'audio/mpeg_4' : [['faac', {}]],
+                # 'audio/x-lpcm' : [['', {}]],
+                # 'audio/x-ac3' : [['', {}]],
+                # 'audio/x-dts' : [['', {}]],
+                'audio/x-opus' :  [
                             ['avenc_opus', {}, 'opusparse', {}]
                           , ['opusenc', {}, 'opusparse', {}] 
                            ]
