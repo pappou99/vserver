@@ -2,7 +2,8 @@
 
 import sys
 import socket
-import select as sel
+import os
+from threading import Thread
 
 import vServer_mqtt as mqtt
 from vServer_choice import SelectThe, PossibleInputs
@@ -11,13 +12,23 @@ from vServer_settings import Settings
 from vServer_benchmark import Benchmark
 
 class Main:
+    _interactive = None
+    @classmethod
+    def get_input(cls):
+        cls._interactive = input('')
+        return
+
     def __init__(self):
         Settings.hostname = socket.gethostname()
 
         print('To use interactive mode: press any key')
-        interactive, b, c = sel.select( [sys.stdin], [], [], 5 )
+        get_input_thread = Thread(target=self.get_input)
+        get_input_thread.daemon = True
+        get_input_thread.start()
+        get_input_thread.join(timeout=5)
 
-        if (interactive):
+        if (self._interactive) != None:
+            os.system('clear')
             select = SelectThe()
             Settings.muxer = select.muxer
             Settings.payloader = select.payloader
@@ -45,7 +56,7 @@ class Main:
             stream_readable = inp_no+1
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
-            # Settings.streams[stream_readable].start()# instantly play video for testing
+            Settings.streams[stream_readable].start()# instantly play video for testing
         
         # print(Settings.streams)
         remote = mqtt.MqttRemote()

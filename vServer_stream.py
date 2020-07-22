@@ -33,7 +33,7 @@ class Stream(threading.Thread):
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(Gst.DebugLevel.FIXME)
+                Gst.debug_set_default_threshold(Gst.DebugLevel.WARNING)
             Gst.debug_add_log_function(self.on_debug, None)
             Gst.debug_remove_log_function(Gst.debug_log_default)
 
@@ -91,7 +91,8 @@ class Stream(threading.Thread):
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
-            [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]]
+            [Settings.a_enc[0], 'a_enc', Settings.a_enc[1] ],
+            [Settings.a_enc[2], 'a_parser', Settings.a_enc[3] ]
        ])
 
         # Jack sink
@@ -113,6 +114,7 @@ class Stream(threading.Thread):
             ['videoscale', None, {}],
             ['capsfilter', None, {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
+            [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
             [Settings.muxer[0], 'muxer', Settings.muxer[1]],
             [Settings.payloader[0], 'payloader', Settings.payloader[1]],
             ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
@@ -213,7 +215,7 @@ class Stream(threading.Thread):
             with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber_readable, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
-        time.sleep(5)
+        time.sleep(2)
         Jacking(self.streamnumber_readable, self.devicename)
 
         while True:

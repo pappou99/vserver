@@ -76,34 +76,34 @@ class SelectThe:
         self.v_enc_list = {
                 # name    :   [[codec1, codec1_option1, opt2, ...], [codec2, codec1_option1]]
                 'mpeg1' :   [
-                            ['avenc_mpeg1video', {}]
-                          , ['mpeg2enc', {'format' : '0'}] 
+                            ['avenc_mpeg1video', {}, 'mpegvideoparse', {}]
+                          , ['mpeg2enc', {'format' : '0'}, 'mpegvideoparse', {}] 
                            ],
                 'mpeg2' :   [
-                            ['avenc_mpeg2video', {}]
-                          , ['mpeg2enc', {}] 
+                            ['avenc_mpeg2video', {}, 'mpegvideoparse', {}]
+                          , ['mpeg2enc', {}, 'mpegvideoparse', {}] 
                            ],
                 'mpeg4' :   [
-                            ['avenc_mpeg4', {}] 
+                            ['avenc_mpeg4', {}, 'mpeg4videoparse', {}] 
                            ],
                 # 'x-dirac' :   [['']],
                 'x-h264'  :   [
-                                ['avenc_h264_omx', {}]
-                              , ['nvh264enc', {}]
-                              , ['openh264enc', {}]
-                              , ['vaapih264enc', {}]
-                              , ['x264enc', {}] 
+                                ['avenc_h264_omx', {}, 'h264parse', {}]
+                              , ['nvh264enc', {}, 'h264parse', {}]
+                              , ['openh264enc', {}, 'h264parse', {}]
+                              , ['vaapih264enc', {}, 'h264parse', {}]
+                              , ['x264enc', {}, 'h264parse', {}] 
                                ],
                 'x-h265'  :   [
-                                ['nvh265enc', {}]
-                              , ['vaapih265enc', {}]
-                              , ['x265enc', {}] 
+                                ['nvh265enc', {}, 'h265parse', {}]
+                              , ['vaapih265enc', {}, 'h265parse', {}]
+                              , ['x265enc', {}, 'h265parse', {}] 
                                ]
             }
 
         self.a_enc_list = {
                 'mpeg1' :   [
-                            ['lamemp3enc', {}] 
+                            ['lamemp3enc', {}, 'mpegaudioparse', {}] 
                            ],
                 # 'mpeg2' : [['faac', {}]],
                 # 'mpeg4' : [['faac', {}]],
@@ -111,8 +111,8 @@ class SelectThe:
                 # 'x-ac3' : [['', {}]],
                 # 'x-dts' : [['', {}]],
                 'x-opus' :  [
-                            ['avenc_opus', {}]
-                          , ['opusenc', {}] 
+                            ['avenc_opus', {}, 'opusparse', {}]
+                          , ['opusenc', {}, 'opusparse', {}] 
                            ]
             }
       

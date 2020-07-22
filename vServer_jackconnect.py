@@ -39,4 +39,4 @@ class Jacking:
                 raise RuntimeError("No physical playback ports")
             for src, dest in zip(capture, real_playback):
                 client.connect(src, dest)
-                time.sleep(1)
+                time.sleep(0.5)
