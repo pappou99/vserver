@@ -120,7 +120,7 @@ class Stream(threading.Thread):
             ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
        ])
 
-        self.a_enc.link(getattr(self, 'muxer'))
+        self.a_parser.link(getattr(self, 'muxer'))
 
         # print('Made the whole things, stream %s ready to play...\n' % self.devicename)
         

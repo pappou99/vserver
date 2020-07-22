@@ -16,7 +16,7 @@ class Benchmark:
         cwd = os.getcwd()
 
         path = '%s/benchmark/logging/' % cwd
-        filename = '%s_%s_%s_%s.nmon' % (v_enc_name, a_enc_name, day, now)
+        filename = '%s_%s_%sStreams_%s_%s.nmon' % (day, now, Settings.num_streams, v_enc_name, a_enc_name)
         logfile = '%s%s' % (path, filename)
         # mode = 'a' if os.path.exists(logfile) else 'w'
         # with open(logfile, mode) as f:
