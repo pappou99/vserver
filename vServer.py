@@ -12,6 +12,14 @@ from vServer_settings import Settings
 from vServer_benchmark import Benchmark
 
 class Main:
+    """Class Main
+    
+    Starts with default settings placed in vServer_settings.py or with interactive user input if needed.
+    Additional modules loaded:
+    Benchmark: Uses nmon to create a benchmark log
+    MQTT: Enables MQTT supprt for remoting via mqtt
+    Ui: Not working yet
+    """    
     _interactive = None
     @classmethod
     def get_input(cls):
@@ -58,15 +66,13 @@ class Main:
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
             Settings.streams[stream_readable].start()# instantly play video for testing
-        
-        # print(Settings.streams)
 
         ### enable MQTT-remote support ###
         # remote = mqtt.MqttRemote()
         # remote.start()
 
         ### create gui ###
-        # self.ui()
+        # self.ui() ### TODO: Not working yet
         
 if __name__ == '__main__':
     try:
