@@ -17,8 +17,8 @@ class Settings:
     
     muxer = ['mpegtsmux', {'alignment': 7}]
     payloader = ['rtpmp2tpay', {}]
-    v_enc = ['avenc_mpeg1video', {}]
-    a_enc = ['opusenc', {}, '', {}]
+    v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
+    a_enc = ['opusenc', {}, 'opusparse', {}]
     num_streams = 8
     
     audio_channels_to_madi = 8

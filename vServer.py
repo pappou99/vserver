@@ -50,6 +50,7 @@ class Main:
         print("Audio: %s"  % Settings.audio_in_name)
         print("Creating streams\n")
 
+        ### create Benchmark-test-files via nmon ###
         Benchmark()
 
         for inp_no in range(0, Settings.num_streams, 1):
@@ -59,8 +60,12 @@ class Main:
             Settings.streams[stream_readable].start()# instantly play video for testing
         
         # print(Settings.streams)
-        remote = mqtt.MqttRemote()
-        remote.start()
+
+        ### enable MQTT-remote support ###
+        # remote = mqtt.MqttRemote()
+        # remote.start()
+
+        ### create gui ###
         # self.ui()
         
 if __name__ == '__main__':
