@@ -3,6 +3,11 @@
 from vServer_settings import Settings
 
 class PossibleInputs:
+    """
+    Class for input settings
+    Define new inputs in following structure:
+    'Readable name' : ['gstreamer_element', 'give_a_name_to_elment or None' {'option1_key' : 'option1_value', 'option2_key' : 'option2_value' }, ... ]
+    """
   
     def List(self, device):
         v_input_list = {
@@ -24,6 +29,10 @@ class PossibleInputs:
         return v_input_list, a_input_list
 
     def Define(self):
+        """
+        function to interactiveley select the audio and videosource defined in class PossibleInputs
+        """
+
         params = PossibleInputs.List(self, 1)
         # print (params)
         v_parameter = params[0]
@@ -46,6 +55,10 @@ class PossibleInputs:
 
     
     def Generate(self, v_inputchoice, a_inputchoice, device):
+        """
+        Function to generate the 
+        """
+
         v_parameter = self.List(device)[0]
         a_parameter = self.List(device)[1]
         v_in = v_parameter[v_inputchoice][0]

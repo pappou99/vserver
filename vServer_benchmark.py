@@ -6,6 +6,10 @@ import os
 from vServer_settings import Settings
 
 class Benchmark:
+    """
+    Class for external benchmark logging via nmon
+    """
+
     def __init__(self):
         v_enc_name = Settings.v_enc[0]
         a_enc_name = Settings.a_enc[0]
