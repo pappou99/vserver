@@ -1,6 +1,27 @@
 #! /usr/bin/python3
-# parts found at
-# # https://isrv.pw/html5-live-streaming-with-mpeg-dash/python-gstreamer-script
+#
+# Copyright (c) 2020 pappou (Björn Bruch).
+#
+# This file is part of vServer 
+# (see https://github.com/pappou99/vserver).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# Thanks to Inanity who gave me inspiration and for his great malm (make add link multi) function
+# I modified it to my my needs. The original can be found at:
+# https://isrv.pw/html5-live-streaming-with-mpeg-dash/python-gstreamer-script
 
 import sys
 import time

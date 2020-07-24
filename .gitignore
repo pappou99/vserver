@@ -11,3 +11,4 @@ benchmark/*
 codecs.ods
 video_udp.py
 logs/*
+8xvlc.sh
