@@ -18,9 +18,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 """vServer.py
 Script which starts a videodembedder and streamer based on Gstreamer (https://https://gstreamer.freedesktop.org/)
-
+The script can be remoted by mqtt.
+For testing and codec selection a interactive user dialog can be selected and benchmarkfiles are written by the nmon tool.
 """
 
 import sys
