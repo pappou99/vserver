@@ -5,8 +5,9 @@ from vServer_settings import Settings
 class PossibleInputs:
     """
     Class for input settings
-    Define new inputs in following structure:
+    For every device define a input in following structure:
     'Readable name' : ['gstreamer_element', 'give_a_name_to_elment or None' {'option1_key' : 'option1_value', 'option2_key' : 'option2_value' }, ... ]
+    For my Decklink card, which provides 8 different SDI-Video inputs a placeholder "device" will later replaced by a number which depends on how many inputs I will capture.
     """
   
     def List(self, device):
@@ -30,7 +31,7 @@ class PossibleInputs:
 
     def Define(self):
         """
-        function to interactiveley select the audio and videosource defined in class PossibleInputs
+        function to interactiveley select the audio and videosource from the defined settings in class PossibleInputs
         """
 
         params = PossibleInputs.List(self, 1)
@@ -56,7 +57,7 @@ class PossibleInputs:
     
     def Generate(self, v_inputchoice, a_inputchoice, device):
         """
-        Function to generate the 
+        Function to generate the dynamic input patterns
         """
 
         v_parameter = self.List(device)[0]
@@ -67,6 +68,17 @@ class PossibleInputs:
         return v_in, a_in
 
 class SelectThe:
+    """Class SelectThe
+    Class for interactive container selection.
+    In self.settings dictionary place in value list:
+    0: the muxer name
+    1: all video 
+    2: audiocodecs which are supported by the muxer
+    3: payloader matching to the muxer
+    4: Bytestring of payloader for sdp-file generation (not working yet)
+
+    """
+
     def __init__(self):
         self.settings =  {
                 # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string

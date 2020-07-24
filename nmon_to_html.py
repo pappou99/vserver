@@ -1,4 +1,10 @@
 #! /usr/bin/python3
+"""
+nmon_to_html.py
+A small script to convert nmon log files to html using nmonchart developed by Nigel Griffiths.
+When converted a small python html-server is started on http://localhost:8000 to see the output on a webbrowser.
+Change the settings to point to where your binaries and nmon-log files are.
+"""
 
 import os
 import http

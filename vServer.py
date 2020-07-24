@@ -1,4 +1,8 @@
 #! /usr/bin/python3
+"""vServer.py
+Script which starts a videodembedder and streamer based on Gstreamer (https://https://gstreamer.freedesktop.org/)
+
+"""
 
 import sys
 import socket
@@ -51,7 +55,9 @@ class Main:
         print("Number of Streams: %s" % Settings.num_streams)
 
         # my_inputs = PossibleInputs.Define(PossibleInputs)
-        # PossibleInputs.Define(PossibleInputs)#disable this line for input parameters set in Settings
+
+        ### enable the following line for interactive input selection
+        # PossibleInputs.Define(PossibleInputs)
         # self.v_in = my_inputs[0]
         print("Video : %s" % Settings.video_in_name)
         # self.a_in = my_inputs[1]
