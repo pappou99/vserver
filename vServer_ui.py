@@ -50,7 +50,8 @@ class Ui:
 
     def on_run(self, stream):
         print("Stasdf")
-        stream.run()
+        pass
+        # stream.run()
 
     def on_stop(self, stream):
         pass

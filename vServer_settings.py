@@ -29,8 +29,8 @@ class Settings:
     speed_preset = 3
     amplification = 4
 
-    video_in_name = 'Decklink-Card' ## must be written like in possible inputs
-    audio_in_name = 'Decklink-Card' # must be written like in possible inputs
+    video_in_name = 'Decklink-Card' ## must be exactly written like in vServer_choice.py class PossibleInputs
+    audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer_choice.py class PossibleInputs
     videowidth = '1920'
     videoheight = '1080'
     
@@ -46,6 +46,7 @@ class Settings:
     streams = [None]
     sdp_info =[None]
     stream = ''
+    debug = False
 
     mqtt_server = '10.82.209.45'
     mqtt_port = 1883

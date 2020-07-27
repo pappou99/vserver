@@ -50,7 +50,7 @@ class Stream(threading.Thread):
 
     def __init__(self, streamnumber, video_in_name, audio_in_name):
 
-        if not Gst.debug_is_active():
+        if Settings.debug == True:
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
             if level < Gst.DebugLevel.ERROR:
@@ -169,7 +169,7 @@ class Stream(threading.Thread):
                     print("%s = %s" % (param, value))
 
     def createsdp(self, hostname, streams, device):
-        print('\n##########\nSourcepad in element payloader created\n##########\n')
+        # print('\n##########\nSourcepad in element payloader created\n##########\n')
         params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
         sdp = ['v=0']
         sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, Settings.stream_ip))
@@ -180,7 +180,7 @@ class Stream(threading.Thread):
 
         # add individual streams to SDP
         for stream in streams:
-            print('Stream: %s' % stream)
+            # print('Stream: %s' % stream)
             sdp.append("m=%s %s RTP/AVP %s" % (stream['media'], stream['port'], stream['payload']))
             sdp.append('c=IN IP4 %s' % hostname)
             sdp.append("a=rtpmap:%s %s/%s" % (stream['payload'], stream['encoding-name'], stream['clock-rate']))

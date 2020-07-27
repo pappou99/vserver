@@ -39,12 +39,12 @@ from vServer_settings import Settings
 
 class Jacking:
     def __init__(self, videonumber, clientname):
-        print('===================JACKING====================')
+        # print('===================JACKING====================')
         client = jack.Client(clientname, servername=None)
         if client.status.server_started:
             print("JACK server started")
         if client.status.name_not_unique:
-            print("unique name {0!r} assigned".format(client.name))
+            print("JACK: unique name %s assigned" % (client.name))
         
         with client:
             capture = client.get_ports(name_pattern='%s:out_jacksink_' % clientname, is_audio=True, is_output=True, is_physical=False)
@@ -55,7 +55,7 @@ class Jacking:
             real_playback = playback[(videonumber-1)*Settings.audio_channels_to_madi:videonumber*Settings.audio_channels_to_madi]
             print('%s' % real_playback)
             if not real_playback:
-                raise RuntimeError("No physical playback ports")
+                raise RuntimeError("JACK: No physical playback ports")
             for src, dest in zip(capture, real_playback):
                 client.connect(src, dest)
                 time.sleep(0.5)
