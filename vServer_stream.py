@@ -80,10 +80,10 @@ class Stream(threading.Thread):
         self.clock = self.pipeline.get_pipeline_clock()
         self.bus = self.pipeline.get_bus()
         self.bus.add_signal_watch()
-        self.bus.connect('message::error', self.on_error)
-        self.bus.connect("message::eos", self.on_eos)
-        self.bus.connect("message::state-changed", self.hallo)
-        self.bus.connect("message::application", self.on_application_message)
+        self.bus.connect('message::error', self.on_error) ### TODO
+        self.bus.connect("message::eos", self.on_eos) ### TODO
+        self.bus.connect("message::state-changed", self.on_state_changed)
+        self.bus.connect("message::application", self.on_application_message) ### TODO
         
 
         inp = PossibleInputs()
@@ -150,8 +150,8 @@ class Stream(threading.Thread):
         
 
     def note_caps(self, pad, args):
-        print('Pad: %s' % pad)
-        print('Args: %s' % args)
+        # print('Pad: %s' % pad)
+        # print('Args: %s' % args)
         print('Caps payloader:')
         caps = pad.query_caps(None)
         print(caps)
@@ -165,8 +165,8 @@ class Stream(threading.Thread):
             if len(parammap) > 0:
                 self.patternGenerated = True
                 self.createsdp(Settings.stream_ip, [parammap], self.streamnumber_readable)
-                for param,value in parammap.items():
-                    print("%s = %s" % (param, value))
+                # for param,value in parammap.items():
+                #     print("%s = %s" % (param, value))
 
     def createsdp(self, hostname, streams, device):
         # print('\n##########\nSourcepad in element payloader created\n##########\n')
@@ -196,12 +196,13 @@ class Stream(threading.Thread):
             fmtp = ''.join(fmtp)
             sdp.append(fmtp)
             sdp.append("a=control:track%d" % 1)
+            print('SDP-Parameter: %s' % sdp)
             # streamnumber += 1
         sdp_str = ('\r\n'.join(sdp))
         # save sdp
         with open('sdp/Video%d.sdp' % device,'w') as sdp_file:
             sdp_file.write('\r\n'.join(sdp))
-        print('write file to %s' % str(sdp_file))
+        # print('write file to %s' % str(sdp_file))
 
     def run(self):
         ###connect messages to read out caps for sdpfile
@@ -312,14 +313,14 @@ class Stream(threading.Thread):
             prev_name = self.current_name
             prev_gst_name = self.element.get_name()
 
-    def hallo(self, user_data):
-        print('#########################################################################\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++Hallo')
+    def hallo(self, _bus, _message):
+        print('#########################################################################\n%s\n%s' % (_next, user_data) )
         
     def on_new_deinterleave_pad(self, element, pad):
         self.audio_counter += 1
         # self.deinterleave_pads[self.audio_counter] = pad
         if self.audio_counter == self.audio_in_stream:
-            print("Connecting Audio %s to stream" % self.audio_in_stream)
+            print("Connecting Audio %s to stream %s" % (self.audio_in_stream, self.id) )
             # print("# New pad added #")
             deint = pad.get_parent()
             # print("deint: %s" % deint)
