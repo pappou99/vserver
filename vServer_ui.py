@@ -23,18 +23,20 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkX11', '3.0')
 from gi.repository import Gtk, GdkX11
-from vServer import Settings
+from vServer_settings import Settings
 
-Gtk.init(None)
+
 
 class Ui:
 
     def __init__(self):
         
         print('Building Ui')
-        self.main_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
-        self.main_window.connect(self, "delete-event", self.on_delete_event)
-        self.main_hbox = Gtk.HBox.new(False, 0)
+        Gtk.init(None)
+        self.window = Gtk.Window()
+        self.window.connect('destroy', Gtk.main_quit)
+        self.window.show_all()
+        Gtk.main()
         
     def controls_per_stream(self, stream):
         box = Gtk.VBox.new(False, 0)

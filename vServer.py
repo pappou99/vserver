@@ -35,6 +35,7 @@ from vServer_choice import SelectThe, PossibleInputs
 from vServer_stream import Stream
 from vServer_settings import Settings
 from vServer_benchmark import Benchmark
+from vServer_ui import Ui
 
 class Main:
     """Class Main
@@ -99,7 +100,7 @@ class Main:
         # remote.start()
 
         ### create gui ###
-        # self.ui() ### TODO: Not working yet
+        # Ui() ### TODO: Not working yet
         
 if __name__ == '__main__':
     try:
