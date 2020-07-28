@@ -23,52 +23,49 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkX11', '3.0')
 from gi.repository import Gtk, GdkX11
+
 from vServer_settings import Settings
+# from vServer import Main
 
 
 
-class Ui:
+class Ui(Gtk.Window):
 
     def __init__(self):
-        
-        print('Building Ui')
-        Gtk.init(None)
-        self.window = Gtk.Window()
-        self.window.connect('destroy', Gtk.main_quit)
-        self.window.show_all()
-        Gtk.main()
-        
-    def controls_per_stream(self, stream):
-        box = Gtk.VBox.new(False, 0)
-        stream_info = Gtk.TextView.new()
-        stream_info.set_editable(False)
-        play = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_PLAY)
-        play.connect("clicked", Settings.streams[stream].start())
-        stop = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_STOP)
-        stop.connect("clicked", self.on_stop, stream)
-        box.pack_start(play, False, False, 2)
-        box.pack_start(stop, False, False, 2)
-        self.main_hbox.add(box)
+        Gtk.Window.__init__(self, title="Hello World")
+        self.hbox = Gtk.HBox()
+        self.add(self.hbox)
 
-    def on_run(self, stream):
+    def on_button_clicked(self, widget):
+        print("Hello World")
+
+        
+    def controls_per_stream(self, streamnumber_readable):
+        self.vbox = Gtk.VBox()
+        self.button_start = Gtk.Button(label="Start Stream %s" % streamnumber_readable)
+        self.button_start.connect("clicked", Settings.streams[streamnumber_readable].start)
+        self.button_stop = Gtk.Button(label='Stop Stream %s' % streamnumber_readable)
+        self.button_stop.connect('clicked', self.on_button_clicked)
+        self.vbox.add(self.button_start)
+        self.vbox.add(self.button_stop)
+        self.hbox.add(self.vbox)
+
+    def on_run(self, streamnumber_readable):
         print("Stasdf")
         pass
-        # stream.run()
 
-    def on_stop(self, stream):
+    def on_stop(self, streamnumber_readable):
         pass
 
         # Gtk.main()
     def show(self):
-        self.main_window.add(self.main_hbox)
-        self.main_window.set_default_size(640, 480)
-        self.main_window.show_all()
+        # self.add(self.main_hbox)
+        # self.set_default_size(640, 480)
+        self.show_all()
         Gtk.main()
 
     # this function is called when the main window is closed
     def on_delete_event(self, widget, event):
-        for stream in range(0, Settings.num_streams, 1):
-            Settings.streams[stream].pipeline.set_state(Gst.State.READY)
         Gtk.main_quit()
 
 

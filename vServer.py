@@ -37,6 +37,8 @@ from vServer_settings import Settings
 from vServer_benchmark import Benchmark
 from vServer_ui import Ui
 
+timeout = 2
+
 class Main:
     """Class Main
     
@@ -55,11 +57,11 @@ class Main:
     def __init__(self):
         Settings.hostname = socket.gethostname()
 
-        print('To use interactive mode: press any key')
+        print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
         get_input_thread = Thread(target=self.get_input)
         get_input_thread.daemon = True
         get_input_thread.start()
-        get_input_thread.join(timeout=5)
+        get_input_thread.join(timeout=timeout)
 
         if (self._interactive) != None:
             os.system('clear')
@@ -93,21 +95,24 @@ class Main:
             stream_readable = inp_no+1
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
-            Settings.streams[stream_readable].start()# instantly play video for testing
+            # Settings.streams[stream_readable].start()# instantly play video for testing
 
         ### enable MQTT-remote support ###
         # remote = mqtt.MqttRemote()
         # remote.start()
 
         ### create gui ###
-        # Ui() ### TODO: Not working yet
+        # self.window = Ui() ### TODO: Not working yet
+        # self.window.connect('destroy', Stream.exit_all)
+        # for inp_no in range(1, Settings.num_streams+1, 1):
+        #     print("Button %s" % inp_no)
+        #     self.window.controls_per_stream(inp_no)
+        # self.window.show()
+        
+        
         
 if __name__ == '__main__':
     try:
         main = Main()
     except KeyboardInterrupt:
-        ls = len(Settings.streams)
-        # print ('############# Länge: %s' % ls)
-        for stream in range(1, ls):
-            print('###########################################################################\n%s' % stream)
-            Settings.streams[stream].stop()
+        Stream.exit_all

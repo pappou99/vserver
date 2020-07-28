@@ -467,3 +467,11 @@ class Stream(threading.Thread):
             # print('Debug {}: {}'.format(
                 # Gst.DebugLevel.get_name(level), message.get()))
             pass
+
+    def exit_all(self):
+        ls = len(Settings.streams)
+        # print ('############# Länge: %s' % ls)
+        for stream in range(1, ls):
+            print('###########################################################################\n%s' % stream)
+            Settings.streams[stream].stop()
+        Ui.on_delete_event
