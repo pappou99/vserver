@@ -135,11 +135,22 @@ class Stream(threading.Thread):
             ['videoscale', None, {}],
             ['capsfilter', None, {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
-            [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
-            [Settings.muxer[0], 'muxer', Settings.muxer[1]],
-            [Settings.payloader[0], 'payloader', Settings.payloader[1]],
-            ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
-       ])
+        ])
+
+        # Stream settings
+        if Settings.payloader[0]=='':
+            self.malm([
+                [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
+                [Settings.muxer[0], 'muxer', Settings.muxer[1]],
+                ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
+            ])
+        else:
+            self.malm([
+                [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
+                [Settings.muxer[0], 'muxer', Settings.muxer[1]],
+                [Settings.payloader[0], 'payloader', Settings.payloader[1]],
+                ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
+            ])
 
         self.a_parser.link(getattr(self, 'muxer'))
 

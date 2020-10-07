@@ -65,7 +65,7 @@ class MqttRemote(threading.Thread):
     def run(self):
         """Function to run the MQTT-Client
         """
-    
+        
         self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
@@ -109,7 +109,7 @@ class MqttRemote(threading.Thread):
                 Settings.streams[video_no].stop()
                 print(Settings.streams)
 
-    def on_publish(self, client, userdata, msg):
+    def on_publish(self, client, userdata, messageid):
         pass
 
     def on_subscribed(self, client, userdata, msg):
