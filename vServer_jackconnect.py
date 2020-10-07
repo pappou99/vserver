@@ -43,8 +43,9 @@ class Jacking:
         client = jack.Client(clientname, servername=None)
         if client.status.server_started:
             print("JACK server started")
-        if client.status.name_not_unique:
-            print("JACK: unique name %s assigned" % (client.name))
+        # if client.status.name_not_unique:
+            # print("JACK: unique name %s assigned" % (client.name))
+            # pass
         
         with client:
             capture = client.get_ports(name_pattern='%s:out_jacksink_' % clientname, is_audio=True, is_output=True, is_physical=False)
@@ -53,7 +54,7 @@ class Jacking:
             del playback[1]
             del playback[0]
             real_playback = playback[(videonumber-1)*Settings.audio_channels_to_madi:videonumber*Settings.audio_channels_to_madi]
-            print('%s' % real_playback)
+            # print('%s' % real_playback)
             if not real_playback:
                 raise RuntimeError("JACK: No physical playback ports")
             for src, dest in zip(capture, real_playback):

@@ -152,7 +152,7 @@ class Stream(threading.Thread):
     def note_caps(self, pad, args):
         # print('Pad: %s' % pad)
         # print('Args: %s' % args)
-        print('Caps payloader:')
+        # print('Caps payloader:')
         caps = pad.query_caps(None)
         print(caps)
         if caps and not self.patternGenerated:
@@ -211,7 +211,7 @@ class Stream(threading.Thread):
             pad.connect('notify::caps', self.note_caps)
         ###
 
-        print('Starting stream %s' % self.devicename)
+        print('Starting stream Number %s' % self.streamnumber_readable)
         ret = self.pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
             print("ERROR: Unable to set the pipeline to the playing state")
@@ -320,7 +320,7 @@ class Stream(threading.Thread):
         self.audio_counter += 1
         # self.deinterleave_pads[self.audio_counter] = pad
         if self.audio_counter == self.audio_in_stream:
-            print("Connecting Audio %s to stream %s" % (self.audio_in_stream, self.id) )
+            print("Connecting audio channel %s to stream number %s" % (self.audio_in_stream, self.streamnumber_readable) )
             # print("# New pad added #")
             deint = pad.get_parent()
             # print("deint: %s" % deint)

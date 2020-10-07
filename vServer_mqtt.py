@@ -50,12 +50,17 @@ class MqttRemote(threading.Thread):
         self.topic_str = "/".join(self.topic)
 
         self.client = mqtt.Client()
+        print("user: %s, pass: %s" %(Settings.mqtt_user, Settings.mqtt_pass))
         self.client.username_pw_set(Settings.mqtt_user, Settings.mqtt_pass)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        print('MQTT: Connect to server at %s' % host)
-        status = self.client.connect(host, port, 60)
-        print(status)
+        self.client.on_publish = self.on_publish
+        self.client.on_subscribed = self.on_subscribed
+
+        print('MQTT: Trying to connect to server at %s:%s' % (host,port))
+        self.client.connect(host, port, 60)
+        # status = self.client.connect(host, port, 60)
+        # print("Status of MQTT-Server: %s" % status)
 
     def run(self):
         """Function to run the MQTT-Client
@@ -71,9 +76,9 @@ class MqttRemote(threading.Thread):
         if rc == 0:
             self.client.subscribe(self.topic_str)
             print('MQTT: Listening to topic: %s' % self.topic_str)
-            print("MQTT: Connected to MQTT-Server at {0} with result code {1}".format(self.host, rc))
+            # print("MQTT: Connected to MQTT-Server at {0} with result code {1}".format(self.host, rc))
         else:
-            print('Bad connection Returned code=%s' % rc)
+            print('MQTT: Bad connection, returned code: %s' % rc)
 
     def on_message(self, client, userdata, msg):
         """
@@ -103,3 +108,9 @@ class MqttRemote(threading.Thread):
                 print('MQTT: Stopping video %s\n' % video_no)
                 Settings.streams[video_no].stop()
                 print(Settings.streams)
+
+    def on_publish(self, client, userdata, msg):
+        pass
+
+    def on_subscribed(self, client, userdata, msg):
+        pass

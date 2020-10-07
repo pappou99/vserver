@@ -35,7 +35,7 @@ from vServer_choice import SelectThe, PossibleInputs
 from vServer_stream import Stream
 from vServer_settings import Settings
 from vServer_benchmark import Benchmark
-from vServer_ui import Ui
+# from vServer_ui import Ui
 
 timeout = 2
 
@@ -95,11 +95,11 @@ class Main:
             stream_readable = inp_no+1
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
-            # Settings.streams[stream_readable].start()# instantly play video for testing
+            Settings.streams[stream_readable].start()# instantly play video for testing
 
         ### enable MQTT-remote support ###
-        # remote = mqtt.MqttRemote()
-        # remote.start()
+        remote = mqtt.MqttRemote()
+        remote.start()
 
         ### create gui ###
         # self.window = Ui() ### TODO: Not working yet
