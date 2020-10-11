@@ -24,6 +24,9 @@ import threading
 from vServer_settings import Settings
 from vServer_stream import Stream
 
+global base_topic = []
+base_topic.extend(Settings.mqtt_topic)
+
 class MqttCommands():
     """Class MqttCommands
     Settings for remote control commands to react to, when received the right topic
@@ -43,8 +46,7 @@ class MqttRemote(threading.Thread):
         self.host = host
 
         ###Building the topic we want to subscribe
-        self.topic = []
-        self.topic.extend(topic)
+        self.topic = base_topic.copy()
         self.topic.append('#')
         # print(self.topic)
         self.topic_str = "/".join(self.topic)

@@ -65,7 +65,7 @@ class Stream(threading.Thread):
         self.id = streamnumber
         self.port = Settings.startport+streamnumber
         self.streamnumber_readable = streamnumber+1
-        self.audio_in_stream = 1
+        self.audio_in_stream = 1#TODO warum hier audio eins? Wahrscheinlich default für automatischen Start aller Streams
         # print('Port: %s' % self.port)
         self.devicename = 'video_%s' % str(self.streamnumber_readable)
         self.patternGenerated = False
@@ -226,6 +226,7 @@ class Stream(threading.Thread):
         ret = self.pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
             print("ERROR: Unable to set the pipeline to the playing state")
+            mqtt_remote.client.publish(self.topic, payload=None, qos=0, retain=False#TODO auslagern in eigene Funktion
             sys.exit(1)
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
