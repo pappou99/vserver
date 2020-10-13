@@ -24,9 +24,6 @@ import threading
 from vServer_settings import Settings
 from vServer_stream import Stream
 
-global base_topic = []
-base_topic.extend(Settings.mqtt_topic)
-
 class MqttCommands():
     """Class MqttCommands
     Settings for remote control commands to react to, when received the right topic
@@ -42,6 +39,8 @@ class MqttRemote(threading.Thread):
     """
 
     def __init__(self, host=Settings.mqtt_server, port=Settings.mqtt_port, topic=Settings.mqtt_topic):
+        base_topic = []
+        base_topic.extend(Settings.mqtt_topic)
         threading.Thread.__init__(self)
         self.host = host
 

@@ -24,6 +24,7 @@ from vServer_secrets import Secrets
 class Settings:
     hostname = ''
 
+    #stream_ip = 'localhost'
     stream_ip = '239.230.225.255'
     startport = 5001
     speed_preset = 3

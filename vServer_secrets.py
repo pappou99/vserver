@@ -22,5 +22,5 @@ class Secrets:
     """
     Class for secret settings, which are not synchronized with github
     """
-    mqtt_user = 'yoursecretusername '
-    mqtt_pass = 'yoursecretpassword'
+    mqtt_user = 'admin'
+    mqtt_pass = 'tomtom'

@@ -138,18 +138,24 @@ class Stream(threading.Thread):
         ])
 
         # Stream settings
-        if Settings.payloader[0]=='':
+        # if Settings.payloader[0]=='':
+        #     self.malm([
+        #         [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
+        #         [Settings.muxer[0], 'muxer', Settings.muxer[1]],
+        #         ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
+        #     ])
+        if Settings.muxer[0]=='flvmux':
             self.malm([
                 [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
                 [Settings.muxer[0], 'muxer', Settings.muxer[1]],
-                ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
+                ['rtmpsink', 'target', {'location': 'rtmp://%s:1935/live/stream_%s'%(Settings.stream_ip,self.streamnumber_readable)}]
             ])
         else:
             self.malm([
                 [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
                 [Settings.muxer[0], 'muxer', Settings.muxer[1]],
                 [Settings.payloader[0], 'payloader', Settings.payloader[1]],
-                ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
+                ['udpsink', 'target', {'host': Settings.stream_ip, 'port' : self.port}]
             ])
 
         self.a_parser.link(getattr(self, 'muxer'))
@@ -217,16 +223,20 @@ class Stream(threading.Thread):
 
     def run(self):
         ###connect messages to read out caps for sdpfile
-        payloader = self.pipeline.get_by_name('payloader')
-        for pad in payloader.srcpads:
-            pad.connect('notify::caps', self.note_caps)
+        if self.pipeline.get_by_name('payloader') == None:
+            pass
+        else:
+            payloader = self.pipeline.get_by_name('payloader')
+            for pad in payloader.srcpads:
+                pad.connect('notify::caps', self.note_caps)
         ###
 
         print('Starting stream Number %s' % self.streamnumber_readable)
+        #print('streaming to %s' % target)
         ret = self.pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
             print("ERROR: Unable to set the pipeline to the playing state")
-            mqtt_remote.client.publish(self.topic, payload=None, qos=0, retain=False#TODO auslagern in eigene Funktion
+            #mqtt_remote.client.publish(self.topic, payload=None, qos=0, retain=False#TODO auslagern in eigene Funktion
             sys.exit(1)
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
@@ -486,4 +496,4 @@ class Stream(threading.Thread):
         for stream in range(1, ls):
             print('###########################################################################\n%s' % stream)
             Settings.streams[stream].stop()
-        Ui.on_delete_event
+        #Ui.on_delete_event
