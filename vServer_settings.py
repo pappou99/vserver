@@ -29,10 +29,10 @@ class Settings:
     speed_preset = 3
     amplification = 4
 
-    video_in_name = 'Decklink-Card' ## must be exactly written like in vServer_choice.py class PossibleInputs
-    audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer_choice.py class PossibleInputs
-    videowidth = '1920'
-    videoheight = '1080'
+    video_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    videowidth = '1280'
+    videoheight = '720'
     
     muxer = ['mpegtsmux', {'alignment': 7}]
     payloader = ['rtpmp2tpay', {}]
