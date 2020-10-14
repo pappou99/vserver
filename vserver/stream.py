@@ -33,8 +33,8 @@ from gi.repository import Gst, GstVideo, GLib
 from gi.repository import GstSdp
 
 from vServer_settings import Settings as Settings
-from vServer_choice import PossibleInputs
-from vServer_jackconnect import Jacking
+from vserver.choice import PossibleInputs
+from vserver.jackconnect import Jacking
 
 import re
 from collections import defaultdict
@@ -196,7 +196,7 @@ class Stream(threading.Thread):
             fmtp = ''.join(fmtp)
             sdp.append(fmtp)
             sdp.append("a=control:track%d" % 1)
-            print('SDP-Parameter: %s' % sdp)
+            print('Stream %s SDP-Parameter: %s' % (self.streamnumber_readable, sdp))
             # streamnumber += 1
         sdp_str = ('\r\n'.join(sdp))
         # save sdp
@@ -474,4 +474,4 @@ class Stream(threading.Thread):
         for stream in range(1, ls):
             print('###########################################################################\n%s' % stream)
             Settings.streams[stream].stop()
-        Ui.on_delete_event
+        #Ui.on_delete_event

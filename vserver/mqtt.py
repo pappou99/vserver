@@ -22,7 +22,7 @@
 import paho.mqtt.client as mqtt
 import threading
 from vServer_settings import Settings
-from vServer_stream import Stream
+from vserver.stream import Stream
 
 class MqttCommands():
     """Class MqttCommands
@@ -97,8 +97,8 @@ class MqttRemote(threading.Thread):
             if Settings.streams[video_no] == None:
                 print('\nMQTT: Preparing videostream %s\n' % video_no)
                 Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
-            elif Settings.stream[video_no] != None:# TODO: Untested
-                print('First stopping the videostream %s\n' % video_no)# TODO: Untested
+            elif Settings.streams[video_no] != None:# TODO: Untested
+                print('MQTT: First stopping the videostream %s\n' % video_no)# TODO: Untested
                 Settings.streams[video_no].stop()# TODO: Untested
                 Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
             Settings.streams[video_no].audio_in_stream = audio_no
