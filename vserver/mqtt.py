@@ -38,26 +38,25 @@ class MqttRemote(threading.Thread):
     Topics to react to and server connection settings to are configured in the vServer_settings.py
     """
 
-    def __init__(self, host=Settings.mqtt_server, port=Settings.mqtt_port, topic=Settings.mqtt_topic):
+    def __init__(self, sub_topic, host=Settings.mqtt_server, port=Settings.mqtt_port, base_topic=Settings.mqtt_topic):
         threading.Thread.__init__(self)
         self.host = host
 
         ###Building the topic we want to subscribe
         self.topic = []
-        self.topic.extend(topic)
-        self.topic.append('#')
+        self.topic.extend(base_topic)
+        self.topic.append(sub_topic)
         # print(self.topic)
         self.topic_str = "/".join(self.topic)
 
         self.client = mqtt.Client()
-        print("user: %s, pass: %s" %(Settings.mqtt_user, Settings.mqtt_pass))
         self.client.username_pw_set(Settings.mqtt_user, Settings.mqtt_pass)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_publish = self.on_publish
         self.client.on_subscribed = self.on_subscribed
 
-        print('MQTT: Trying to connect to server at %s:%s' % (host,port))
+        print('MQTT: Connecting to server at %s:%s' % (host,port))
         self.client.connect(host, port, 60)
         # status = self.client.connect(host, port, 60)
         # print("Status of MQTT-Server: %s" % status)

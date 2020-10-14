@@ -98,7 +98,7 @@ class main:
             Settings.streams[stream_readable].start()# instantly play video for testing
 
         ### enable MQTT-remote support ###
-        remote = mqtt.MqttRemote()
+        remote = mqtt.MqttRemote(sub_topic='#')
         remote.start()
 
         ### create gui ###
