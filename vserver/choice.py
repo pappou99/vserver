@@ -118,8 +118,8 @@ class SelectThe:
                     ],
                 'flv'   :   [
                     ['flvmux', {'streamable' : True}], 
-                    ['x-flash-video', 'x-flash-screen', 'x-vp6-flash', 'x-vp6-alpha', 'video/x-h264'], 
-                    ['x-adpcm', 'audio/mpeg_v1', 'mpeg3', 'audio/mpeg_4', 'audio/mpeg_2', 'x-nellymoser', 'x-raw', 'x-alaw', 'x-mulaw', 'x-speex'], 
+                    ['video/x-flash-video', 'video/x-flash-screen', 'video/x-vp6-flash', 'video/x-vp6-alpha', 'video/x-h264'], 
+                    ['audio/x-adpcm', 'audio/mpeg_1', 'audio/mpeg_3', 'audio/mpeg_4', 'audio/mpeg_2', 'audio/x-nellymoser', 'audio/x-raw', 'audio/x-alaw', 'audio/x-mulaw', 'audio/x-speex'], 
                     [], 
                     ''
                     ]
