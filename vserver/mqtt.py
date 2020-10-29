@@ -41,6 +41,7 @@ class MqttRemote(threading.Thread):
     def __init__(self, sub_topic, host=Settings.mqtt_server, port=Settings.mqtt_port, base_topic=Settings.mqtt_topic):
         threading.Thread.__init__(self)
         self.host = host
+        self.port = port
 
         ###Building the topic we want to subscribe
         self.topic = []
@@ -56,9 +57,9 @@ class MqttRemote(threading.Thread):
         self.client.on_publish = self.on_publish
         self.client.on_subscribed = self.on_subscribed
 
-        print('MQTT: Connecting to server at %s:%s' % (host,port))
-        self.client.connect(host, port, 60)
-        # status = self.client.connect(host, port, 60)
+        print('MQTT: Connecting to server at %s:%s' % (self.host, self.port))
+        self.client.connect(self.host, self.port, 60)
+        # status = self.client.connect(self.host, self.port, 60)
         # print("Status of MQTT-Server: %s" % status)
 
     def run(self):
@@ -74,7 +75,7 @@ class MqttRemote(threading.Thread):
 
         if rc == 0:
             self.client.subscribe(self.topic_str)
-            print('MQTT: Listening to topic: %s' % self.topic_str)
+            print('MQTT: Successfully connected to %s at port %s\nMQTT: Listening to topic: %s' % (self.host, self.port, self.topic_str))
             # print("MQTT: Connected to MQTT-Server at {0} with result code {1}".format(self.host, rc))
         else:
             print('MQTT: Bad connection, returned code: %s' % rc)
