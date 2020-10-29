@@ -54,8 +54,9 @@ class Stream(threading.Thread):
         if Settings.debug == True:
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
+            print("Debug-Level: %s" % level)
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(Gst.DebugLevel.WARNING)
+                Gst.debug_set_default_threshold(Gst.DebugLevel.FIXME)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
             Gst.debug_add_log_function(self.on_debug, None)
             Gst.debug_remove_log_function(Gst.debug_log_default)
 
@@ -138,8 +139,9 @@ class Stream(threading.Thread):
             [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
             [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
             [Settings.muxer[0], 'muxer', Settings.muxer[1]],
-            [Settings.payloader[0], 'payloader', Settings.payloader[1]],
-            ['udpsink', 'udp', {'host': Settings.stream_ip, 'port' : self.port}]
+            # [Settings.payloader[0], 'payloader', Settings.payloader[1]],
+            # ['udpsink', 'netsink', {'host': Settings.stream_ip, 'port' : self.port}]
+            ['rtmpsink', 'netsink', {'location': 'rtmp://10.82.109.41:1935/live/%s' %self.streamnumber_readable } ]
        ])
 
         self.a_parser.link(getattr(self, 'muxer'))
@@ -207,23 +209,23 @@ class Stream(threading.Thread):
 
     def run(self):
         ###connect messages to read out caps for sdpfile
-        payloader = self.pipeline.get_by_name('payloader')
-        for pad in payloader.srcpads:
-            pad.connect('notify::caps', self.note_caps)
+        # payloader = self.pipeline.get_by_name('payloader')
+        # for pad in payloader.srcpads:
+        #     pad.connect('notify::caps', self.note_caps)
         ###
 
         print('Starting stream Number %s' % self.streamnumber_readable)
         ret = self.pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
-            print("ERROR: Unable to set the pipeline to the playing state")
+            print("ERROR: Unable to set the pipeline to the pause state")
             sys.exit(1)
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
         deint.link_pads('src_%s' % (self.audio_in_stream-1), follower, None)
         time.sleep(5)
-        # print('\nWriting dot file for debug information\n')
-        # with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
-        #     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        print('\nWriting dot file for debug information\n')
+        with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
+            dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
@@ -231,12 +233,12 @@ class Stream(threading.Thread):
             # sys.exit(1)
         
         
-        # print('\nWriting dot file for debug information\n')
-        # with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
-        #     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-        if self.streamnumber_readable == 1:
-            with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber_readable, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
-                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        print('\nWriting dot file for debug information\n')
+        with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
+            dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        # if self.streamnumber_readable == 1:
+        #     with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber_readable, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
+        #         dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         time.sleep(2)
         Jacking(self.streamnumber_readable, self.devicename)
