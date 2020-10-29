@@ -100,7 +100,13 @@ class SelectThe:
 
     def __init__(self):
         self.settings =  {
-                # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
+                # 'containername'    :   [
+                    # ['container', {'container_option1' : value1, 'container_option2' : value2}],
+                    # [videoformat1, videoformat2, ...],
+                    # [audioformat1, audioformat2, ...],
+                    # ['payloader', {}],
+                    # b'payloader_string'
+
                 'Choose nothing and exit' : '',
                 'ts'    :   [
                     ['mpegtsmux', {'alignment' : 7}],    
@@ -120,7 +126,7 @@ class SelectThe:
                     ['flvmux', {'streamable' : True}], 
                     ['video/x-flash-video', 'video/x-flash-screen', 'video/x-vp6-flash', 'video/x-vp6-alpha', 'video/x-h264'], 
                     ['audio/x-adpcm', 'audio/mpeg_1', 'audio/mpeg_3', 'audio/mpeg_4', 'audio/mpeg_2', 'audio/x-nellymoser', 'audio/x-raw', 'audio/x-alaw', 'audio/x-mulaw', 'audio/x-speex'], 
-                    [], 
+                    [],
                     ''
                     ]
             }
@@ -153,7 +159,7 @@ class SelectThe:
             }
 
         self.a_enc_list = {
-                'audio/mpeg_v1' :   [
+                'audio/mpeg_1' :   [
                             ['lamemp3enc', {}, 'mpegaudioparse', {}] 
                            ],
                 # 'audio/mpeg_2' : [['faac', {}]],
