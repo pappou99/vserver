@@ -148,8 +148,9 @@ class Stream(threading.Thread):
 
         # print('Made the whole things, stream %s ready to play...\n' % self.devicename)
         
-        # with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
-        #     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        if Settings.debug == True:
+            with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
+                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
         
 
     def note_caps(self, pad, args):
@@ -217,15 +218,17 @@ class Stream(threading.Thread):
         print('Starting stream Number %s' % self.streamnumber_readable)
         ret = self.pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
-            print("ERROR: Unable to set the pipeline to the pause state")
+            print("ERROR: Unable to set the pipeline of Stream %s to the pause state" % self.streamnumber_readable)
             sys.exit(1)
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
         deint.link_pads('src_%s' % (self.audio_in_stream-1), follower, None)
         time.sleep(5)
-        print('\nWriting dot file for debug information\n')
-        with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
-            dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+
+        if Settings.debug == True:
+            print('Writing dot file for debug information after pause status of pipeline')
+            with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
+                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
@@ -233,12 +236,14 @@ class Stream(threading.Thread):
             # sys.exit(1)
         
         
-        print('\nWriting dot file for debug information\n')
-        with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
-            dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-        # if self.streamnumber_readable == 1:
-        #     with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber_readable, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
-        #         dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        if Settings.debug == True:
+            print('Writing dot file for debug information after play status of pipeline')
+            with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
+                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        else:
+            if self.streamnumber_readable == 1:
+                with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber_readable, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
+                    dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         time.sleep(2)
         Jacking(self.streamnumber_readable, self.devicename)

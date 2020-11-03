@@ -37,24 +37,31 @@ import jack
 import threading
 from vServer_settings import Settings
 
+@jack.set_error_function
+def error(msg):
+    print('JACK ERROR:', msg)
+
 class Jacking:
     def __init__(self, videonumber, clientname):
-        # print('===================JACKING====================')
+        print('===================JACKING====================')
         client = jack.Client(clientname, servername=None)
         if client.status.server_started:
-            print("JACK server started")
-        # if client.status.name_not_unique:
-            # print("JACK: unique name %s assigned" % (client.name))
-            # pass
-        
+            print("JACK: JACK server started")
+        else:
+            print('JACK: JACK server was already running')
+        if client.status.name_not_unique:
+            print("JACK: unique name %s assigned" % (client.name))
+    
         with client:
             capture = client.get_ports(name_pattern='%s:out_jacksink_' % clientname, is_audio=True, is_output=True, is_physical=False)
             playback = client.get_ports(is_physical=True, is_input=True)
-            # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
-            del playback[1]
-            del playback[0]
+            print('Jack: Playbackports: %s' % playback)
+            if Settings.homework == True:
+                # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
+                del playback[1]
+                del playback[0]
             real_playback = playback[(videonumber-1)*Settings.audio_channels_to_madi:videonumber*Settings.audio_channels_to_madi]
-            # print('%s' % real_playback)
+            print('JACK: Real playback: %s' % real_playback)
             if not real_playback:
                 raise RuntimeError("JACK: No physical playback ports")
             for src, dest in zip(capture, real_playback):

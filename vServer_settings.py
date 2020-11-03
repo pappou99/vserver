@@ -22,6 +22,10 @@
 from vServer_secrets import Secrets
 
 class Settings:
+    debug = True
+    homework = True
+
+    maschinename = 'videoserver1'
     hostname = ''
 
     stream_ip = '239.230.225.255'
@@ -29,14 +33,20 @@ class Settings:
     speed_preset = 3
     amplification = 4
 
-    video_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    # video_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    # audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    video_in_name = 'Test picture generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    audio_in_name = 'Test sound generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
     videowidth = '1280'
     videoheight = '720'
     
-    muxer = ['mpegtsmux', {'alignment': 7}]
-    payloader = ['rtpmp2tpay', {}]
-    v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
+    # muxer = ['mpegtsmux', {'alignment': 7}]
+    muxer = ['flvmux', {'streamable' : True}]
+    # payloader = ['rtpmp2tpay', {}]
+    payloader = None
+    # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
+    v_enc = ['openh264enc', {}, 'h264parse', {}]
+
     a_enc = ['opusenc', {}, 'opusparse', {}]
     num_streams = 8
     
@@ -50,6 +60,6 @@ class Settings:
 
     mqtt_server = '10.82.209.45'
     mqtt_port = 1883
-    mqtt_topic = ['gvg-grp', 'vserv1', 'video']
+    mqtt_topic = ['gvg-grp', maschinename, 'video']
     mqtt_user = Secrets.mqtt_user
     mqtt_pass = Secrets.mqtt_pass
