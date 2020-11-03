@@ -60,7 +60,9 @@ class Jacking:
                 # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
                 del playback[1]
                 del playback[0]
-            real_playback = playback[(videonumber-1)*Settings.audio_channels_to_madi:videonumber*Settings.audio_channels_to_madi]
+            first_playbackport = (videonumber-1)*Settings.audio_channels_to_madi # to calculate which is the first madiport depending of videonumber and number of channels per video
+            last_playbackport = videonumber*Settings.audio_channels_to_madi # to calculate which is the last madiport depending of videonumber and number of channels per video
+            real_playback = playback[first_playbackport:last_playbackport]
             print('JACK: Real playback: %s' % real_playback)
             if not real_playback:
                 raise RuntimeError("JACK: No physical playback ports")
