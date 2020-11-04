@@ -31,11 +31,15 @@ gi.require_version('GstVideo', '1.0')
 gi.require_version('GstSdp', '1.0')
 from gi.repository import Gst, GstVideo, GLib
 from gi.repository import GstSdp
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 
 from vServer_settings import Settings as Settings
 from vserver.choice import PossibleInputs
 from vserver.jackconnect import Jacking
 #from vserver.mqtt import MqttRemote as publ
+
+from vserver.ui.ui import Ui
 
 import re
 from collections import defaultdict
@@ -68,6 +72,7 @@ class Stream(threading.Thread):
         self.port = Settings.startport+streamnumber
         self.streamnumber_readable = streamnumber+1
         self.audio_in_stream = 1
+        self.status = None
         # print('Port: %s' % self.port)
         self.devicename = 'video_%s' % str(self.streamnumber_readable)
         self.patternGenerated = False
@@ -86,6 +91,14 @@ class Stream(threading.Thread):
         self.bus.connect("message::eos", self.on_eos) ### TODO
         self.bus.connect("message::state-changed", self.on_state_changed)
         self.bus.connect("message::application", self.on_application_message) ### TODO
+
+        # #ui parts
+        # #add start buttons
+        # self.button = Gtk.Button.new_with_label("Start Stream %s" % self.streamnumber_readable)
+        # self.button.connect("clicked",  Ui.start_stream_gui, self.streamnumber_readable)
+        # Settings.main_window.starthbox.pack_start(self.button, True, True, 0)
+        # self.label = Gtk.Label(label="hallo %s" % self.status)
+        # Settings.main_window.starthbox.add(self.label)
         
 
         inp = PossibleInputs()
@@ -234,7 +247,6 @@ class Stream(threading.Thread):
         if ret == Gst.StateChangeReturn.FAILURE:
             print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
             # sys.exit(1)
-        
         
         if Settings.debug == True:
             print('Writing dot file for debug information after play status of pipeline')
@@ -390,9 +402,12 @@ class Stream(threading.Thread):
             Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
 
         if old == Gst.State.READY and new == Gst.State.PAUSED:
+            pass
             # for extra responsiveness we refresh the GUI as soons as
             # we reach the PAUSED state
-            self.refresh_ui()
+        self.status = Gst.Element.state_get_name(new)
+        self.label = Gtk.Label(label="hallo %s" % self.status)
+            # self.refresh_ui()
     # extract metadata from all the streams and write it to the text widget
     # in the GUI
 

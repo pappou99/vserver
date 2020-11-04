@@ -18,56 +18,66 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
+import threading
 import gi
 
-gi.require_version('Gtk', '3.0')
-gi.require_version('GdkX11', '3.0')
-from gi.repository import Gtk, GdkX11
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 
 from vServer_settings import Settings
-# from vServer import Main
+from vserver.remote import Remote
 
 
-
-class Ui(Gtk.Window):
-
+class Ui(threading.Thread, Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title="Hello World")
-        self.hbox = Gtk.HBox()
-        self.add(self.hbox)
+        Gtk.Window.__init__(self, title="Videoserver %s" % Settings.maschinename)
+        
+        self.set_border_width(10)
 
-    def on_button_clicked(self, widget):
-        print("Hello World")
+        #add a horizontal box for all the start buttons
+        self.starthbox = Gtk.Box(spacing=6)
+        self.add(self.starthbox)
+
+        #add a horizontal box for all the stop buttons
+        self.stophbox = Gtk.Box(spacing=6)
+        self.add(self.stophbox)
+
+        #add start buttons
+        button = Gtk.Button.new_with_label("Start Stream 1")
+        button.connect("clicked",  self.start_stream_gui, 1)
+        self.starthbox.pack_start(button, True, True, 0)
+        label = Gtk.Label(label="hallo %s" % Settings.streams[1].status)
+        self.starthbox.add(label)
+
+        button = Gtk.Button.new_with_label("Start Stream 2")
+        button.connect("clicked",  self.start_stream_gui, 2)
+        self.starthbox.pack_start(button, True, True, 0)
+        label = Gtk.Label(label="hallo %s" % Settings.streams[2].status)
+        self.starthbox.add(label)
+
+        button = Gtk.Button.new_with_label("Start Stream 3")
+        button.connect("clicked",  self.start_stream_gui, 3)
+        self.starthbox.pack_start(button, True, True, 0)
+        label = Gtk.Label(label="hallo %s" % Settings.streams[3].status)
+        self.starthbox.add(label)
+
+        button = Gtk.Button.new_with_label("Start Stream 4")
+        button.connect("clicked",  self.start_stream_gui, 4)
+        self.starthbox.pack_start(button, True, True, 0)
+        label = Gtk.Label(label="hallo %s" % Settings.streams[4].status)
+        self.starthbox.add(label)
+
+        #add a close button TODO move to a different box
+        button = Gtk.Button.new_with_mnemonic("_Close")
+        button.connect("clicked", self.on_close_clicked)
+        self.starthbox.pack_start(button, True, True, 0)
+
+    def on_close_clicked(self, button):
+        print("Closing application")
+        Gtk.main_quit()
+    
+    def start_stream_gui(self, button, stream_readable):
+        Remote.play(None, stream_readable, 1)#TODO change audio selection to dropdown
 
         
-    def controls_per_stream(self, streamnumber_readable):
-        self.vbox = Gtk.VBox()
-        self.button_start = Gtk.Button(label="Start Stream %s" % streamnumber_readable)
-        self.button_start.connect("clicked", Settings.streams[streamnumber_readable].start)
-        self.button_stop = Gtk.Button(label='Stop Stream %s' % streamnumber_readable)
-        self.button_stop.connect('clicked', self.on_button_clicked)
-        self.vbox.add(self.button_start)
-        self.vbox.add(self.button_stop)
-        self.hbox.add(self.vbox)
-
-    def on_run(self, streamnumber_readable):
-        print("Stasdf")
-        pass
-
-    def on_stop(self, streamnumber_readable):
-        pass
-
-        # Gtk.main()
-    def show(self):
-        # self.add(self.main_hbox)
-        # self.set_default_size(640, 480)
-        self.show_all()
-        Gtk.main()
-
-    # this function is called when the main window is closed
-    def on_delete_event(self, widget, event):
-        Gtk.main_quit()
-
-
-
-    #######

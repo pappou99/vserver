@@ -30,12 +30,16 @@ import socket
 import os
 from threading import Thread
 
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+
 import vserver.mqtt as mqtt
 from vserver.choice import SelectThe, PossibleInputs
 from vserver.stream import Stream
 from vServer_settings import Settings
 from vserver.benchmark import Benchmark
-# from vserver.ui import Ui
+from vserver.ui import ui
 
 timeout = 2
 
@@ -46,7 +50,7 @@ class main:
     Additional modules loaded:
     Benchmark: Uses nmon to create a benchmark log
     MQTT: Enables MQTT supprt for remoting via mqtt
-    Ui: Not working yet
+    TODO Ui: Not working yet
     """    
     _interactive = None
     @classmethod
@@ -91,25 +95,23 @@ class main:
         ### create Benchmark-test-files via nmon ###
         Benchmark()
 
+        ### create streams
         for inp_no in range(0, Settings.num_streams, 1):
             stream_readable = inp_no+1
             Settings.streams.append(stream_readable)
             Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
-            Settings.streams[stream_readable].start()# instantly play video for testing
 
-        ### enable MQTT-remote support ###
-        remote = mqtt.MqttRemote(sub_topic='#')
-        remote.start()
+            # Settings.streams[stream_readable].start()# instantly play video for testing
 
         ### create gui ###
-        # self.window = Ui() ### TODO: Not working yet
-        # self.window.connect('destroy', Stream.exit_all)
-        # for inp_no in range(1, Settings.num_streams+1, 1):
-        #     print("Button %s" % inp_no)
-        #     self.window.controls_per_stream(inp_no)
-        # self.window.show()
-        
-        
+        Settings.main_window = ui.Ui()
+        Settings.main_window.connect("destroy", Gtk.main_quit)
+        Settings.main_window.show_all()
+        Gtk.main()
+
+        ### enable MQTT-remote support ###
+        # remote = mqtt.MqttRemote(sub_topic='#')
+        # remote.start()
         
 if __name__ == '__main__':
     try:

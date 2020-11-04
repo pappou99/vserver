@@ -63,3 +63,6 @@ class Settings:
     mqtt_topic = ['gvg-grp', maschinename, 'video']
     mqtt_user = Secrets.mqtt_user
     mqtt_pass = Secrets.mqtt_pass
+
+    ### Ui
+    main_window = None
