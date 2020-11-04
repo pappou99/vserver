@@ -23,6 +23,7 @@ import paho.mqtt.client as mqtt
 import threading
 from vServer_settings import Settings
 from vserver.stream import Stream
+from vserver.remote import Remote
 
 class MqttCommands():
     """Class MqttCommands
@@ -92,22 +93,25 @@ class MqttRemote(threading.Thread):
         audio_no = int(topics[-1])
         if msg.payload == MqttCommands.play:
             # print(Settings.streams[video_no].__dict__)
-            print("\nMQTT: Video {0} soll mit Audio {1} gestartet werden".format(video_no, audio_no))#
-            # print(Settings.streams)
-            if Settings.streams[video_no] == None:
-                print('\nMQTT: Preparing videostream %s\n' % video_no)
-                Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
-            elif Settings.streams[video_no] != None:# TODO: Untested
-                print('MQTT: First stopping the videostream %s\n' % video_no)# TODO: Untested
-                Settings.streams[video_no].stop()# TODO: Untested
-                Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
-            Settings.streams[video_no].audio_in_stream = audio_no
-            Settings.streams[video_no].start()
+            print('\nMQTT: Received play command for stream %s with audio %s' % (video_no, audio_no))#
+            Remote.play(video_no, audio_no)
+            # # print(Settings.streams)
+            # if Settings.streams[video_no] == None:
+            #     print('\nMQTT: Preparing videostream %s\n' % video_no)
+            #     Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
+            # elif Settings.streams[video_no] != None:# TODO: Untested
+            #     print('MQTT: First stopping the videostream %s\n' % video_no)# TODO: Untested
+            #     Settings.streams[video_no].stop()# TODO: Untested
+            #     Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
+            # Settings.streams[video_no].audio_in_stream = audio_no
+            # Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
-            if Settings.streams[video_no] != None:
-                print('MQTT: Stopping video %s\n' % video_no)
-                Settings.streams[video_no].stop()
-                print(Settings.streams)
+            print('MQTT: Received stop command for stream %s' % video_no)
+            Remote.stop(video_no)
+            # if Settings.streams[video_no] != None:
+            #     print('MQTT: Stopping video %s\n' % video_no)
+            #     Settings.streams[video_no].stop()
+            #     print(Settings.streams)
 
     def on_publish(self, client, userdata, msg):
         pass
