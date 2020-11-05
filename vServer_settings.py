@@ -56,7 +56,6 @@ class Settings:
     streams = [None]
     sdp_info =[None]
     stream = ''
-    debug = False
 
     mqtt_server = '10.82.209.45'
     mqtt_port = 1883
