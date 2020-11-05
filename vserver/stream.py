@@ -34,7 +34,7 @@ from gi.repository import GstSdp
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
-from vServer_settings import Settings as Settings
+from vServer_settings import Settings
 from vserver.choice import PossibleInputs
 from vserver.jackconnect import Jacking
 #from vserver.mqtt import MqttRemote as publ
@@ -58,9 +58,9 @@ class Stream(threading.Thread):
         if Settings.debug == True:
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
-            print("Debug-Level: %s" % level)
+            # print("Debug-Level: %s" % level)
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(Gst.DebugLevel.FIXME)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+                Gst.debug_set_default_threshold(Gst.DebugLevel.INFO)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
             Gst.debug_add_log_function(self.on_debug, None)
             Gst.debug_remove_log_function(Gst.debug_log_default)
 
@@ -68,15 +68,16 @@ class Stream(threading.Thread):
         self._stop_signal = threading.Event()
         self.audio_counter = 0
         self.deinterleave_pads = [None]
-        self.id = streamnumber
+        self.streamnumber = streamnumber
+        self.stream_id = self.streamnumber-1
         self.port = Settings.startport+streamnumber
-        self.streamnumber_readable = streamnumber+1
+        # self.streamnumber_readable = streamnumber+1
         self.audio_in_stream = 1
         self.status = None
         # print('Port: %s' % self.port)
-        self.devicename = 'video_%s' % str(self.streamnumber_readable)
+        self.devicename = 'video_%s' % str(self.streamnumber)
         self.patternGenerated = False
-        location = Settings.stream_ip# + self.devicename
+        self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber)
         # print('Uri: %s' % location)
         # print('Streamnumber: %s' % self.devicename)
         # self.mainloop = GLib.MainLoop()
@@ -94,15 +95,15 @@ class Stream(threading.Thread):
 
         # #ui parts
         # #add start buttons
-        # self.button = Gtk.Button.new_with_label("Start Stream %s" % self.streamnumber_readable)
-        # self.button.connect("clicked",  Ui.start_stream_gui, self.streamnumber_readable)
+        # self.button = Gtk.Button.new_with_label("Start Stream %s" % self.streamnumber)
+        # self.button.connect("clicked",  Ui.start_stream_gui, self.streamnumber)
         # Settings.main_window.starthbox.pack_start(self.button, True, True, 0)
         # self.label = Gtk.Label(label="hallo %s" % self.status)
         # Settings.main_window.starthbox.add(self.label)
         
 
         inp = PossibleInputs()
-        in_options = inp.Generate(video_in_name, audio_in_name, streamnumber)
+        in_options = inp.Generate(video_in_name, audio_in_name, stream_id)
         videoinput = in_options[0]
         audioinput = in_options[1]
 
@@ -150,11 +151,11 @@ class Stream(threading.Thread):
             ['videoscale', None, {}],
             ['capsfilter', None, {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
-            [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
+            # [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
             [Settings.muxer[0], 'muxer', Settings.muxer[1]],
             # [Settings.payloader[0], 'payloader', Settings.payloader[1]],
             # ['udpsink', 'netsink', {'host': Settings.stream_ip, 'port' : self.port}]
-            ['rtmpsink', 'netsink', {'location': 'rtmp://10.82.109.41:1935/live/%s' %self.streamnumber_readable } ]
+            ['rtmpsink', 'netsink', {'location': '%s' % self.location } ]
        ])
 
         self.a_parser.link(getattr(self, 'muxer'))
@@ -162,7 +163,7 @@ class Stream(threading.Thread):
         # print('Made the whole things, stream %s ready to play...\n' % self.devicename)
         
         if Settings.debug == True:
-            with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber_readable,'w') as dot_file:
+            with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber,'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
         
 
@@ -181,7 +182,7 @@ class Stream(threading.Thread):
 
             if len(parammap) > 0:
                 self.patternGenerated = True
-                self.createsdp(Settings.stream_ip, [parammap], self.streamnumber_readable)
+                self.createsdp(Settings.stream_ip, [parammap], self.streamnumber)
                 # for param,value in parammap.items():
                 #     print("%s = %s" % (param, value))
 
@@ -213,7 +214,7 @@ class Stream(threading.Thread):
             fmtp = ''.join(fmtp)
             sdp.append(fmtp)
             sdp.append("a=control:track%d" % 1)
-            print('Stream %s SDP-Parameter: %s' % (self.streamnumber_readable, sdp))
+            print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
             # streamnumber += 1
         sdp_str = ('\r\n'.join(sdp))
         # save sdp
@@ -228,10 +229,10 @@ class Stream(threading.Thread):
         #     pad.connect('notify::caps', self.note_caps)
         ###
 
-        print('Starting stream Number %s' % self.streamnumber_readable)
+        print('Starting stream Number %s' % self.streamnumber)
         ret = self.pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
-            print("ERROR: Unable to set the pipeline of Stream %s to the pause state" % self.streamnumber_readable)
+            print("ERROR: Unable to set the pipeline of Stream %s to the pause state" % self.streamnumber)
             sys.exit(1)
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
@@ -240,7 +241,7 @@ class Stream(threading.Thread):
 
         if Settings.debug == True:
             print('Writing dot file for debug information after pause status of pipeline')
-            with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber_readable,'w') as dot_file:
+            with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber,'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         ret = self.pipeline.set_state(Gst.State.PLAYING)
@@ -250,15 +251,15 @@ class Stream(threading.Thread):
         
         if Settings.debug == True:
             print('Writing dot file for debug information after play status of pipeline')
-            with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber_readable,'w') as dot_file:
+            with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber,'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
         else:
-            if self.streamnumber_readable == 1:
-                with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber_readable, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
+            if self.streamnumber == 1:
+                with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
                     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
         time.sleep(2)
-        Jacking(self.streamnumber_readable, self.devicename)
+        Jacking(self.streamnumber, self.devicename)
 
         while True:
             is_killed = self._stop_signal.wait(1)
@@ -276,7 +277,7 @@ class Stream(threading.Thread):
         follower = self.pipeline.get_by_name('d_follower')
         deint.unlink(follower)
         self._stop_signal.set()
-        Settings.streams[self.streamnumber_readable] = None
+        Settings.streams[self.streamnumber] = None
         # self.mainloop.quit()
 
     def do_keyframe(self, user_data):
@@ -340,7 +341,7 @@ class Stream(threading.Thread):
         self.audio_counter += 1
         # self.deinterleave_pads[self.audio_counter] = pad
         if self.audio_counter == self.audio_in_stream:
-            print("Connecting audio channel %s to stream number %s" % (self.audio_in_stream, self.streamnumber_readable) )
+            print("Connecting audio channel %s to stream number %s" % (self.audio_in_stream, self.streamnumber) )
             # print("# New pad added #")
             deint = pad.get_parent()
             # print("deint: %s" % deint)

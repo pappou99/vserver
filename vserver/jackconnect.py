@@ -44,6 +44,7 @@ def error(msg):
 class Jacking:
     def __init__(self, videonumber, clientname):
         print('===================JACKING====================')
+        self.video_id = videonumber -1
         client = jack.Client(clientname, servername=None)
         if client.status.server_started:
             print("JACK: JACK server started")
@@ -60,8 +61,8 @@ class Jacking:
                 # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
                 del playback[1]
                 del playback[0]
-            first_playbackport = (videonumber-1)*Settings.audio_channels_to_madi # to calculate which is the first madiport depending of videonumber and number of channels per video
-            last_playbackport = videonumber*Settings.audio_channels_to_madi # to calculate which is the last madiport depending of videonumber and number of channels per video
+            first_playbackport = (self.video_id - 1) * Settings.audio_channels_to_madi # to calculate which is the first madiport depending of video-id and number of channels per video
+            last_playbackport = self.video_id * Settings.audio_channels_to_madi # to calculate which is the last madiport depending of video-id and number of channels per video
             real_playback = playback[first_playbackport:last_playbackport]
             print('JACK: Real playback: %s' % real_playback)
             if not real_playback:

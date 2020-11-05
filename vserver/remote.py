@@ -23,19 +23,19 @@ from vServer_settings import Settings
 from vserver.stream import Stream
 
 class Remote():
-    def play(self, video_no, audio_no):
-        if Settings.streams[video_no] == None:
-            print('\REMOTE: Preparing videostream %s\n' % video_no)
-            Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
-        elif Settings.streams[video_no] != None:# TODO: Untested
-            print('REMOTE: First stopping the videostream %s\n' % video_no)# TODO: Untested
-            Settings.streams[video_no].stop()# TODO: Untested
-            Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
-        Settings.streams[video_no].audio_in_stream = audio_no
-        Settings.streams[video_no].start()
+    def play(self, streamnumber, audio_no):
+        if Settings.streams[streamnumber] == None:
+            print('\REMOTE: Preparing videostream %s\n' % streamnumber)
+            Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
+        elif Settings.streams[streamnumber] != None:# TODO: Untested
+            print('REMOTE: First stopping the videostream %s\n' % streamnumber)# TODO: Untested
+            Settings.streams[streamnumber].stop()# TODO: Untested
+            Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
+        Settings.streams[streamnumber].audio_in_stream = audio_no
+        Settings.streams[streamnumber].start()
 
-    def stop(self, video_no):
-        if Settings.streams[video_no] != None:
-            print('REMOTE: Stopping video %s\n' % video_no)
-            Settings.streams[video_no].stop()
+    def stop(self, streamnumber):
+        if Settings.streams[streamnumber] != None:
+            print('REMOTE: Stopping video %s\n' % streamnumber)
+            Settings.streams[streamnumber].stop()
             print(Settings.streams)
