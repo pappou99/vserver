@@ -23,20 +23,21 @@ from vServer_secrets import Secrets
 
 class Settings:
     debug = True
-    homework = True
+    homework = False
 
     maschinename = 'videoserver1'
-    hostname = ''
+    hostname = ''#will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
 
-    stream_ip = '239.230.225.255'
+    # stream_ip = '239.230.225.255'# multicast Address
+    stream_ip = '10.82.109.41' #rtmp server address
     startport = 5001
     speed_preset = 3
     amplification = 4
 
-    # video_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    # audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    video_in_name = 'Test picture generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    audio_in_name = 'Test sound generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    video_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    # video_in_name = 'Test picture generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    # audio_in_name = 'Test sound generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
     videowidth = '1280'
     videoheight = '720'
     
@@ -45,10 +46,10 @@ class Settings:
     # payloader = ['rtpmp2tpay', {}]
     payloader = None
     # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
-    v_enc = ['openh264enc', {}, 'h264parse', {}]
+    v_enc = ['avenc_h264_omx', {}, 'h264parse', {}]
 
     a_enc = ['opusenc', {}, 'opusparse', {}]
-    num_streams = 8
+    num_streams = 1
     
     audio_channels_to_madi = 8
     audio_channels_to_stream = 1
