@@ -23,7 +23,8 @@ from vServer_secrets import Secrets
 
 class Settings:
     debug = True
-    homework = False
+    homework = True
+    instant_play = False
 
     maschinename = 'videoserver1'
     hostname = ''#will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
@@ -34,10 +35,10 @@ class Settings:
     speed_preset = 3
     amplification = 4
 
-    video_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    # video_in_name = 'Test picture generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    # audio_in_name = 'Test sound generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    # video_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    # audio_in_name = 'Decklink-Card' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    video_in_name = 'Test picture generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    audio_in_name = 'Test sound generator' ## must be exactly written like in vServer.choice.py class PossibleInputs
     videowidth = '1280'
     videoheight = '720'
     
@@ -46,12 +47,12 @@ class Settings:
     # payloader = ['rtpmp2tpay', {}]
     payloader = None
     # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
-    v_enc = ['avenc_h264_omx', {}, 'h264parse', {}]
+    v_enc = ['x264enc', {}, 'h264parse', {}]
 
     a_enc = ['opusenc', {}, 'opusparse', {}]
-    num_streams = 1
+    num_streams = 2
     
-    audio_channels_to_madi = 8
+    audio_channels_to_madi = 2
     audio_channels_to_stream = 1
     
     streams = [None]

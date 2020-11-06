@@ -96,12 +96,14 @@ class main:
         Benchmark()
 
         ### create streams
-        for inp_no in range(0, Settings.num_streams, 1):
-            stream_readable = inp_no+1
-            Settings.streams.append(stream_readable)
-            Settings.streams[stream_readable] = Stream(inp_no, Settings.video_in_name, Settings.audio_in_name)
-
-            # Settings.streams[stream_readable].start()# instantly play video for testing
+        for streamnumber in range(1, Settings.num_streams + 1, 1):
+            # streamnumber = inp_no + 1
+            print('88888888888888888888888888888888 STREAMNUMBER: %s' % streamnumber)
+            Settings.streams.append(streamnumber)
+            Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
+        
+        if Settings.instant_play == True:
+            Settings.streams[streamnumber].start()# instantly play video for testing
 
         ### create gui ###
         Settings.main_window = ui.Ui()
