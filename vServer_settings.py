@@ -24,11 +24,13 @@ from vServer_secrets import Secrets
 class Settings:
     debug = True
     homework = True
+    instant_play = False
 
     maschinename = 'videoserver1'
-    hostname = ''
+    hostname = ''#will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
 
-    stream_ip = '239.230.225.255'
+    # stream_ip = '239.230.225.255'# multicast Address
+    stream_ip = '10.82.109.41' #rtmp server address
     startport = 5001
     speed_preset = 3
     amplification = 4
@@ -45,20 +47,20 @@ class Settings:
     # payloader = ['rtpmp2tpay', {}]
     payloader = None
     # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
-    v_enc = ['openh264enc', {}, 'h264parse', {}]
+    v_enc = ['x264enc', {}, 'h264parse', {}]
 
     a_enc = ['opusenc', {}, 'opusparse', {}]
-    num_streams = 8
+    num_streams = 2
     
-    audio_channels_to_madi = 8
+    audio_channels_to_madi = 2
     audio_channels_to_stream = 1
     
     streams = [None]
     sdp_info =[None]
     stream = ''
-    debug = False
 
     mqtt_server = '10.82.209.45'
+    if homework == True: mqtt_server = 'localhost'
     mqtt_port = 1883
     mqtt_topic = ['gvg-grp', maschinename, 'video']
     mqtt_user = Secrets.mqtt_user

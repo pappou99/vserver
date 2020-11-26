@@ -23,6 +23,8 @@ from vServer_settings import Settings
 from vserver.stream import Stream
 
 class Remote():
+    def __init__(self):
+        pass
     def play(self, streamnumber, audio_no):
         if Settings.streams[streamnumber] == None:
             print('\REMOTE: Preparing videostream %s\n' % streamnumber)

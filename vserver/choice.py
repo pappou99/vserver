@@ -43,7 +43,7 @@ class PossibleInputs:
                     ['decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : 8, 'do-timestamp' : True}]
               ],
                 'Test sound generator' : [
-                    ['audiotestsrc', None, {'is-live' : 1, 'do-timestamp' : True}] #, '!', 'audio/x-raw,channels=8'
+                    ['audiotestsrc', None, {'is-live' : 1, 'do-timestamp' : True, 'volume' : 0.1}] #, '!', 'audio/x-raw,channels=8'
               ]
             }
         return v_input_list, a_input_list

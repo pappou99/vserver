@@ -26,7 +26,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from vServer_settings import Settings
-from vserver.remote import Remote
+# from vserver.remote import Remote
 
 
 class Ui(threading.Thread, Gtk.Window):
@@ -44,11 +44,13 @@ class Ui(threading.Thread, Gtk.Window):
         self.add(self.stophbox)
 
         #add start buttons
-        button = Gtk.Button.new_with_label("Start Stream 1")
-        button.connect("clicked",  self.start_stream_gui, 1)
-        self.starthbox.pack_start(button, True, True, 0)
-        label = Gtk.Label(label="hallo %s" % Settings.streams[1].status)
-        self.starthbox.add(label)
+        for stream in range(1, Settings.num_streams):
+
+            button = Gtk.Button.new_with_label("Start Stream %s" % stream)
+            button.connect("clicked",  self.start_stream_gui, stream)
+            self.starthbox.pack_start(button, True, True, 0)
+            label = Gtk.Label(label="hallo %s" % Settings.streams[stream].status)
+            self.starthbox.add(label)
 
         button = Gtk.Button.new_with_label("Start Stream 2")
         button.connect("clicked",  self.start_stream_gui, 2)

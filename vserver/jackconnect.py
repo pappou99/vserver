@@ -41,7 +41,7 @@ from vServer_settings import Settings
 def error(msg):
     print('JACK ERROR:', msg)
 
-class Jacking:
+class Jacking(threading.Thread):
     def __init__(self, videonumber, clientname):
         print('===================JACKING====================')
         self.video_id = videonumber -1
@@ -57,16 +57,21 @@ class Jacking:
             capture = client.get_ports(name_pattern='%s:out_jacksink_' % clientname, is_audio=True, is_output=True, is_physical=False)
             playback = client.get_ports(is_physical=True, is_input=True)
             print('Jack: Playbackports: %s' % playback)
-            if Settings.homework == True:
+            if Settings.homework == False:
                 # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
+                print('JACK: Removing the first two ports')
                 del playback[1]
                 del playback[0]
-            first_playbackport = (self.video_id - 1) * Settings.audio_channels_to_madi # to calculate which is the first madiport depending of video-id and number of channels per video
-            last_playbackport = self.video_id * Settings.audio_channels_to_madi # to calculate which is the last madiport depending of video-id and number of channels per video
-            real_playback = playback[first_playbackport:last_playbackport]
+            first_playbackport = (self.video_id) * Settings.audio_channels_to_madi # to calculate which is the first madiport depending of video-id and number of channels per video
+            # print('video_id: %s' % self.video_id)
+            # print('1st playbackport: %s' % first_playbackport)
+            last_playbackport = ((self.video_id + 1) * Settings.audio_channels_to_madi) - 1 # to calculate which is the last madiport depending of video-id and number of channels per video
+            # print('last playbackport: %s' % last_playbackport)
+            real_playback = playback[first_playbackport:last_playbackport + 1 ] # we have to add a +1 because the slice does not include the last element
             print('JACK: Real playback: %s' % real_playback)
             if not real_playback:
                 raise RuntimeError("JACK: No physical playback ports")
             for src, dest in zip(capture, real_playback):
                 client.connect(src, dest)
+                print('JACK: Linked %s to %s' % (src, dest))
                 time.sleep(0.5)
