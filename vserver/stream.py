@@ -60,7 +60,7 @@ class Stream(threading.Thread):
             level = Gst.debug_get_default_threshold()
             # print("Debug-Level: %s" % level)
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(Gst.DebugLevel.INFO)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+                Gst.debug_set_default_threshold(Gst.DebugLevel.FIXME)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
             Gst.debug_add_log_function(self.on_debug, None)
             Gst.debug_remove_log_function(Gst.debug_log_default)
 
@@ -103,7 +103,7 @@ class Stream(threading.Thread):
         
 
         inp = PossibleInputs()
-        in_options = inp.Generate(video_in_name, audio_in_name, stream_id)
+        in_options = inp.Generate(video_in_name, audio_in_name, self.stream_id)
         videoinput = in_options[0]
         audioinput = in_options[1]
 

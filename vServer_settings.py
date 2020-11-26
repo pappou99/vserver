@@ -60,6 +60,7 @@ class Settings:
     stream = ''
 
     mqtt_server = '10.82.209.45'
+    if homework == True: mqtt_server = 'localhost'
     mqtt_port = 1883
     mqtt_topic = ['gvg-grp', maschinename, 'video']
     mqtt_user = Secrets.mqtt_user

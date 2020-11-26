@@ -105,15 +105,15 @@ class main:
         if Settings.instant_play == True:
             Settings.streams[streamnumber].start()# instantly play video for testing
 
-        ### create gui ###
-        Settings.main_window = ui.Ui()
-        Settings.main_window.connect("destroy", Gtk.main_quit)
-        Settings.main_window.show_all()
-        Gtk.main()
+        # ### create gui ###
+        # Settings.main_window = ui.Ui()
+        # Settings.main_window.connect("destroy", Gtk.main_quit)
+        # Settings.main_window.show_all()
+        # Gtk.main()
 
         ### enable MQTT-remote support ###
-        # remote = mqtt.MqttRemote(sub_topic='#')
-        # remote.start()
+        remote = mqtt.MqttRemote(sub_topic='#')
+        remote.start()
         
 if __name__ == '__main__':
     try:

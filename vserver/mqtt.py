@@ -91,10 +91,11 @@ class MqttRemote(threading.Thread):
         # print(topics)
         video_no = int(topics[-3])
         audio_no = int(topics[-1])
+        remote = Remote()
         if msg.payload == MqttCommands.play:
             # print(Settings.streams[video_no].__dict__)
             print('\nMQTT: Received play command for stream %s with audio %s' % (video_no, audio_no))#
-            Remote.play(video_no, audio_no)
+            remote.play(video_no, audio_no)
             # # print(Settings.streams)
             # if Settings.streams[video_no] == None:
             #     print('\nMQTT: Preparing videostream %s\n' % video_no)
@@ -107,7 +108,7 @@ class MqttRemote(threading.Thread):
             # Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
             print('MQTT: Received stop command for stream %s' % video_no)
-            Remote.stop(video_no)
+            remote.stop(video_no)
             # if Settings.streams[video_no] != None:
             #     print('MQTT: Stopping video %s\n' % video_no)
             #     Settings.streams[video_no].stop()
