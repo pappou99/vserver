@@ -12,3 +12,4 @@ benchmark/*
 codecs.ods
 video_udp.py
 logs/*
+vserver/ui/__pycache__/
