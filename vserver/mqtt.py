@@ -20,7 +20,7 @@
 #
 
 import paho.mqtt.client as mqtt
-import threading
+from threading import Thread
 from vServer_settings import Settings
 from vserver.stream import Stream
 from vserver.remote import Remote
@@ -33,14 +33,14 @@ class MqttCommands():
     play = b'play'
     stop = b'stop'
 
-class MqttRemote(threading.Thread):
+class MqttRemote(Thread):
     """Class MqttRemote
     Enables MQTT remote support
     Topics to react to and server connection settings to are configured in the vServer_settings.py
     """
 
     def __init__(self, sub_topic, host=Settings.mqtt_server, port=Settings.mqtt_port, base_topic=Settings.mqtt_topic):
-        threading.Thread.__init__(self)
+        super().__init__(name='mqtt')
         self.host = host
         self.port = port
 
@@ -58,15 +58,13 @@ class MqttRemote(threading.Thread):
         self.client.on_publish = self.on_publish
         self.client.on_subscribed = self.on_subscribed
 
+    def run(self):
+        """Function to run the MQTT-Client
+        """
         print('MQTT: Connecting to server at %s:%s' % (self.host, self.port))
         self.client.connect(self.host, self.port, 60)
         # status = self.client.connect(self.host, self.port, 60)
         # print("Status of MQTT-Server: %s" % status)
-
-    def run(self):
-        """Function to run the MQTT-Client
-        """
-    
         self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
@@ -86,15 +84,17 @@ class MqttRemote(threading.Thread):
         Callback function when a message is received.
         """
         
-        print("\nMQTT: Message received on topic:\n{0}\nmessage: {1}".format(msg.topic, msg.payload))
+        print("\nMQTT: Message received on topic: %s | message: %s" % (msg.topic, msg.payload))
         topics = msg.topic.split("/")
         # print(topics)
         video_no = int(topics[-3])
         audio_no = int(topics[-1])
-        remote = Remote()
-        if msg.payload == MqttCommands.play:
+        remote = Remote()#TODO wieso? -> Thread
+        if msg.payload == ('' or b''):
+            print('MQTT: No payload was submitted! Don\'t know what to do!')
+        elif msg.payload == MqttCommands.play:
             # print(Settings.streams[video_no].__dict__)
-            print('\nMQTT: Received play command for stream %s with audio %s' % (video_no, audio_no))#
+            print('MQTT: Received play command for stream %s with audio %s' % (video_no, audio_no))#
             remote.play(video_no, audio_no)
             # # print(Settings.streams)
             # if Settings.streams[video_no] == None:
