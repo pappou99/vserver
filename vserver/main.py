@@ -98,13 +98,14 @@ class main:
 
         ### create streams
         for streamnumber in range(1, Settings.num_streams + 1, 1):
-            # streamnumber = inp_no + 1
-            print('88888888888888888888888888888888 STREAMNUMBER: %s' % streamnumber)
-            Settings.streams.append(streamnumber)
-            Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
+        #     # streamnumber = inp_no + 1
+        #     print('88888888888888888888888888888888 STREAMNUMBER: %s' % streamnumber)
+            Settings.streams.append(dict())
+            Settings.streams[streamnumber]['status'] = None
+            Settings.streams[streamnumber]['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
         
-        if Settings.instant_play == True:
-            Settings.streams[streamnumber].start()# instantly play video for testing
+        # if Settings.instant_play == True:
+        #     Settings.streams[streamnumber].start()# instantly play video for testing
 
         # ### create gui ###
         # Settings.main_window = ui.Ui()
