@@ -30,9 +30,9 @@ import socket
 import os
 from threading import Thread
 
-import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+# import gi
+# gi.require_version("Gtk", "3.0")
+# from gi.repository import Gtk
 
 import vserver.mqtt as mqtt
 from vserver.choice import SelectThe, PossibleInputs
