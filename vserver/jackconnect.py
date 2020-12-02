@@ -41,21 +41,23 @@ from vServer_settings import Settings
 def error(msg):
     print('JACK ERROR:', msg)
 
-class Jacking(threading.Thread):
-    def __init__(self, videonumber, clientname):
+class Jacking(): #threading.Thread
+    def __init__(self, clientname=Settings.hostname):
+        self.client = jack.Client(clientname, servername=None)
+        self.checks()
+        time.sleep(0.5)
+
+    def connect(self, videonumber, clientname):
         print('===================JACKING====================')
         self.video_id = videonumber -1
-        client = jack.Client(clientname, servername=None)
-        if client.status.server_started:
-            print("JACK: JACK server started")
-        else:
-            print('JACK: JACK server was already running')
-        if client.status.name_not_unique:
-            print("JACK: unique name %s assigned" % (client.name))
-    
-        with client:
-            capture = client.get_ports(name_pattern='%s:out_jacksink_' % clientname, is_audio=True, is_output=True, is_physical=False)
-            playback = client.get_ports(is_physical=True, is_input=True)
+        self.clientname = clientname
+        self.client = jack.Client(self.clientname, servername=None)
+
+        self.checks()
+
+        with self.client:
+            capture = self.client.get_ports(name_pattern='%s' % self.clientname, is_audio=True, is_output=True, is_physical=False)
+            playback = self.client.get_ports(is_physical=True, is_input=True)
             print('Jack: Playbackports: %s' % playback)
             if Settings.homework == False:
                 # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
@@ -72,6 +74,14 @@ class Jacking(threading.Thread):
             if not real_playback:
                 raise RuntimeError("JACK: No physical playback ports")
             for src, dest in zip(capture, real_playback):
-                client.connect(src, dest)
+                self.client.connect(src, dest)
                 print('JACK: Linked %s to %s' % (src, dest))
-                time.sleep(0.5)
+                # time.sleep(0.5)
+
+    def checks(self):
+        if self.client.status.server_started:
+            print("JACK: JACK server started")
+        else:
+            print('JACK: JACK server was already running')
+        if self.client.status.name_not_unique:
+            print("JACK: unique name %s assigned" % (self.client.name))
