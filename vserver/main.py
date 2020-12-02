@@ -61,20 +61,21 @@ class main:
     def __init__(self):
         Settings.hostname = socket.gethostname()
 
-        print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
-        get_input_thread = Thread(target=self.get_input)
-        get_input_thread.daemon = True
-        get_input_thread.start()
-        get_input_thread.join(timeout=timeout)
+        if Settings.interactive == True:
+            print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
+            get_input_thread = Thread(target=self.get_input, name='interactivity')
+            get_input_thread.daemon = True
+            get_input_thread.start()
+            get_input_thread.join(timeout=timeout)
 
-        if (self._interactive) != None:
-            os.system('clear')
-            select = SelectThe()
-            Settings.muxer = select.muxer
-            Settings.payloader = select.payloader
-            Settings.v_enc = select.Video()
-            Settings.a_enc = select.Audio()
-            Settings.num_streams = select.Number()
+            if (self._interactive) != None:
+                os.system('clear')
+                select = SelectThe()
+                Settings.muxer = select.muxer
+                Settings.payloader = select.payloader
+                Settings.v_enc = select.Video()
+                Settings.a_enc = select.Audio()
+                Settings.num_streams = select.Number()
 
         print('Muxer: %s' % Settings.muxer)
         print('Payloader: %s' % Settings.payloader)
