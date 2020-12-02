@@ -1,58 +1,28 @@
-#! /usr/bin/python3
-#
-# Copyright (c) 2020 pappou (Björn Bruch).
-#
-# This file is part of vServer 
-# (see https://github.com/pappou99/vserver).
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
-#
+#!/usr/bin/env python3
 
-# Thanks to Inanity who gave me inspiration and for his great malm (make add link multi) function
-# I modified it to my my needs. The original can be found at:
-# https://isrv.pw/html5-live-streaming-with-mpeg-dash/python-gstreamer-script
-
+import os
 import sys
 import time
+from threading import Thread
+
+import weakref
+
 import gi
 gi.require_version('Gst', '1.0')
-gi.require_version('GstVideo', '1.0')
-gi.require_version('GstSdp', '1.0')
-from gi.repository import Gst, GstVideo, GLib
-from gi.repository import GstSdp
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+gi.require_version('Gtk', '3.0')
+# gi.require_version('GdkX11', '3.0')
+# gi.require_version('GstVideo', '1.0')
+from gi.repository import Gst, GLib
 
 from vServer_settings import Settings
 from vserver.choice import PossibleInputs
 from vserver.jackconnect import Jacking
-#from vserver.mqtt import MqttRemote as publ
 
-from vserver.ui.ui import Ui
-
-import re
-from collections import defaultdict
-import random
-
-import threading
-
-Gst.init(None)
+# http://docs.gstreamer.com/display/GstSDK/Basic+tutorial+5%3A+GUI+toolkit+integration
 
 
-class Stream(threading.Thread):
-    lock = threading.Lock()
-
+class Stream():
+    killswitch = False
     def __init__(self, streamnumber, video_in_name, audio_in_name):
 
         if Settings.debug == True:
@@ -60,56 +30,51 @@ class Stream(threading.Thread):
             level = Gst.debug_get_default_threshold()
             # print("Debug-Level: %s" % level)
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(Gst.DebugLevel.FIXME)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+                Gst.debug_set_default_threshold(Gst.DebugLevel.WARNING)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
             Gst.debug_add_log_function(self.on_debug, None)
             Gst.debug_remove_log_function(Gst.debug_log_default)
+        # initialize GTK
+        # Gtk.init(sys.argv)
 
-        threading.Thread.__init__(self)
-        self._stop_signal = threading.Event()
-        self.audio_counter = 0
-        self.deinterleave_pads = [None]
+        # initialize GStreamer
+        Gst.init(sys.argv)
+
         self.streamnumber = streamnumber
-        self.stream_id = self.streamnumber-1
-        self.port = Settings.startport+streamnumber
-        # self.streamnumber_readable = streamnumber+1
-        self.audio_in_stream = 1
-        self.status = None
-        # print('Port: %s' % self.port)
-        self.devicename = 'video_%s' % str(self.streamnumber)
-        self.patternGenerated = False
+        self.stream_id = streamnumber - 1
+        self.devicename = 'video_%s' % self.streamnumber
         self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber)
-        # print('Uri: %s' % location)
-        # print('Streamnumber: %s' % self.devicename)
-        # self.mainloop = GLib.MainLoop()
-        # self.mainloop = GLib.MainLoop.new(None, False)
+        self.audio_to_stream = 1
+        self.audio_counter = 0
+        self.me = Settings.streams[streamnumber]
+
+        self.state = Gst.State.NULL
+        self._elements = []
+        self.duration = Gst.CLOCK_TIME_NONE
         self.pipeline = Gst.Pipeline()
         if not self.pipeline:
-            print("ERROR: Pipeline could not be created")
-        self.clock = self.pipeline.get_pipeline_clock()
-        self.bus = self.pipeline.get_bus()
-        self.bus.add_signal_watch()
-        self.bus.connect('message::error', self.on_error) ### TODO
-        self.bus.connect("message::eos", self.on_eos) ### TODO
-        self.bus.connect("message::state-changed", self.on_state_changed)
-        self.bus.connect("message::application", self.on_application_message) ### TODO
+            print("ERROR: Could not create playbin.")
+            sys.exit(1)
 
-        # #ui parts
-        # #add start buttons
-        # self.button = Gtk.Button.new_with_label("Start Stream %s" % self.streamnumber)
-        # self.button.connect("clicked",  Ui.start_stream_gui, self.streamnumber)
-        # Settings.main_window.starthbox.pack_start(self.button, True, True, 0)
-        # self.label = Gtk.Label(label="hallo %s" % self.status)
-        # Settings.main_window.starthbox.add(self.label)
-        
+        # # set up URI
+        # self.malm([
+        #     ["playbin", "playbin", {"uri" : "http://ftp.halifax.rwth-aachen.de/blender/demo/movies/Sintel.2010.1080p.mkv"}]
+        # ])
+
+
+        # instruct the bus to emit signals for each received message
+        # and connect to the interesting signals
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+
+        bus.connect("message::error", self.on_error)
+        bus.connect("message::eos", self.on_eos)
+        bus.connect("message::state-changed", self.on_state_changed)
+        bus.connect("message::application", self.on_application_message)
 
         inp = PossibleInputs()
         in_options = inp.Generate(video_in_name, audio_in_name, self.stream_id)
         videoinput = in_options[0]
         audioinput = in_options[1]
-
-        # self.malm([
-        #     ['playbin', None, {'uri' : 'file:///home/pappou/DATA/VideosSintel.2010.720p.mkv'}]
-        # ])
 
         # Audio source
         self.malm([
@@ -158,134 +123,124 @@ class Stream(threading.Thread):
             ['rtmpsink', 'netsink', {'location': '%s' % self.location } ]
        ])
 
+        # self.a_parser.link(getattr(self, 'muxer'))
         self.a_parser.link(getattr(self, 'muxer'))
 
-        # print('Made the whole things, stream %s ready to play...\n' % self.devicename)
-        
         if Settings.debug == True:
             with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber,'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+
+        self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
         
 
-    def note_caps(self, pad, args):
-        # print('Pad: %s' % pad)
-        # print('Args: %s' % args)
-        # print('Caps payloader:')
-        caps = pad.query_caps(None)
-        print(caps)
-        if caps and not self.patternGenerated:
-            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps))
-            parammap = defaultdict(str)
-            for (_, param, value, value2) in parameters:
-                parammap[param] = value if value else value2
-                parammap['port'] = self.port
+    # set the playbin to PLAYING (start playback), register refresh callback
+    # and start the GTK main loop
+    def play(self):
+        self.audio_to_stream = self.me['audio_to_stream']
+        try:
+            # start playing
+            ret = self.pipeline.set_state(Gst.State.PAUSED)
+            if ret == Gst.StateChangeReturn.FAILURE:
+                print("ERROR: Unable to set the pipeline to the pause state. Is Jack running?")
+                sys.exit(1)
 
-            if len(parammap) > 0:
-                self.patternGenerated = True
-                self.createsdp(Settings.stream_ip, [parammap], self.streamnumber)
-                # for param,value in parammap.items():
-                #     print("%s = %s" % (param, value))
+            deint = self.pipeline.get_by_name('deinterleaver')
+            follower = self.pipeline.get_by_name('d_follower')
+            deint.link_pads('src_%s' % (self.audio_to_stream-1), follower, None)
 
-    def createsdp(self, hostname, streams, device):
-        # print('\n##########\nSourcepad in element payloader created\n##########\n')
-        params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
-        sdp = ['v=0']
-        sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, Settings.stream_ip))
-        sdp.append('t=0 0')
-        sdp.append('s=GST2SDP')
+            audio_stream = self.pipeline.get_by_name('a_enc')
+            stream_muxer = self.pipeline.get_by_name('muxer')
+            audio_stream.link_pads('src', stream_muxer, None)
+            time.sleep(5)
 
-        streamnumber = 2
-
-        # add individual streams to SDP
-        for stream in streams:
-            # print('Stream: %s' % stream)
-            sdp.append("m=%s %s RTP/AVP %s" % (stream['media'], stream['port'], stream['payload']))
-            sdp.append('c=IN IP4 %s' % hostname)
-            sdp.append("a=rtpmap:%s %s/%s" % (stream['payload'], stream['encoding-name'], stream['clock-rate']))
-            fmtp = ["a=fmtp:%s" % stream['payload']]
-            for param,value in stream.items():
-                # is parameter an action?
-                if param[0] == 'a' and param[1] == '-':
-                    aparam = "%s:%s" % (param.replace('a-', 'a='), value)
-                    sdp.append(aparam)
-                else:
-                    if param not in params2ignore:
-                        fmtp.append(" %s=%s;" % (param, value))
-            fmtp = ''.join(fmtp)
-            sdp.append(fmtp)
-            sdp.append("a=control:track%d" % 1)
-            print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
-            # streamnumber += 1
-        sdp_str = ('\r\n'.join(sdp))
-        # save sdp
-        with open('sdp/Video%d.sdp' % device,'w') as sdp_file:
-            sdp_file.write('\r\n'.join(sdp))
-        # print('write file to %s' % str(sdp_file))
-
-    def run(self):
-        ###connect messages to read out caps for sdpfile
-        # payloader = self.pipeline.get_by_name('payloader')
-        # for pad in payloader.srcpads:
-        #     pad.connect('notify::caps', self.note_caps)
-        ###
-
-        print('Starting stream Number %s' % self.streamnumber)
-        ret = self.pipeline.set_state(Gst.State.PAUSED)
-        if ret == Gst.StateChangeReturn.FAILURE:
-            print("ERROR: Unable to set the pipeline of Stream %s to the pause state" % self.streamnumber)
-            sys.exit(1)
-        deint = self.pipeline.get_by_name('deinterleaver')
-        follower = self.pipeline.get_by_name('d_follower')
-        deint.link_pads('src_%s' % (self.audio_in_stream-1), follower, None)
-        time.sleep(5)
-
-        if Settings.debug == True:
-            print('Writing dot file for debug information after pause status of pipeline')
-            with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber,'w') as dot_file:
-                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-
-        ret = self.pipeline.set_state(Gst.State.PLAYING)
-        if ret == Gst.StateChangeReturn.FAILURE:
-            print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
-            # sys.exit(1)
-        
-        if Settings.debug == True:
-            print('Writing dot file for debug information after play status of pipeline')
-            with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber,'w') as dot_file:
-                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-        else:
-            if self.streamnumber == 1:
-                with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
+            if Settings.debug == True:
+                print('Writing dot file for debug information after pause status of pipeline')
+                with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber,'w') as dot_file:
                     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+            
+            ret = self.pipeline.set_state(Gst.State.PLAYING)
+            if ret == Gst.StateChangeReturn.FAILURE:
+                print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
+                sys.exit(1)
 
-        time.sleep(2)
-        Jacking(self.streamnumber, self.devicename)
+            if Settings.debug == True:
+                print('Writing dot file for debug information after play status of pipeline')
+                with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber,'w') as dot_file:
+                    dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+            else:
+                if self.streamnumber == 1:
+                    with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
+                        dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
-        while True:
-            is_killed = self._stop_signal.wait(1)
-            if is_killed:
-                print('killed')
-                self.stop()
-                break
+            jackaudio = Jacking()
+            jackaudio.connect(self.streamnumber, self.devicename)
+
+            # register a function that GLib will call every second
+            # GLib.timeout_add_seconds(1, self.refresh_ui)
+
+            # start the GTK main loop. we will not regain control until
+            # Gtk.main_quit() is called
+            # Gtk.main()
+            # free resources
+            self.loop = GLib.MainLoop()
+            self.loop.run()
+        finally:
+            self.cleanup()
 
     def stop(self):
-        # self._stop_event.set()
-        print('Exiting...')
-        self.pipeline.set_state(Gst.State.NULL)
-        Gst.debug_bin_to_dot_file(self.pipeline, Gst.DebugGraphDetails.ALL, 'stream')
-        deint = self.pipeline.get_by_name('deinterleaver')
-        follower = self.pipeline.get_by_name('d_follower')
-        deint.unlink(follower)
-        self._stop_signal.set()
-        Settings.streams[self.streamnumber] = None
-        # self.mainloop.quit()
+        self.loop.quit()
+        self.pipeline.set_state(Gst.State.READY)
+        pass
 
-    def do_keyframe(self, user_data):
-        # Forces a keyframe on all video encoders
-        event = GstVideo.video_event_new_downstream_force_key_unit(self.clock.get_time(), 0, 0, True, 0)
-        self.pipeline.send_event(event)
+    # set the playbin state to NULL and remove the reference to it
+    def cleanup(self):
+        if self.pipeline:
+            self.pipeline.set_state(Gst.State.NULL)
+            self.pipeline = None
 
-        return True
+    def build_ui(self):
+        main_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
+        main_window.connect("delete-event", self.on_delete_event)
+
+        video_window = Gtk.DrawingArea.new()
+        video_window.set_double_buffered(False)
+        video_window.connect("realize", self.on_realize)
+        video_window.connect("draw", self.on_draw)
+
+        play_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_PLAY)
+        play_button.connect("clicked", self.on_play)
+
+        pause_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_PAUSE)
+        pause_button.connect("clicked", self.on_pause)
+
+        stop_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_STOP)
+        stop_button.connect("clicked", self.on_stop)
+
+        self.slider = Gtk.HScale.new_with_range(0, 100, 1)
+        self.slider.set_draw_value(False)
+        self.slider_update_signal_id = self.slider.connect(
+            "value-changed", self.on_slider_changed)
+
+        self.streams_list = Gtk.TextView.new()
+        self.streams_list.set_editable(False)
+
+        controls = Gtk.HBox.new(False, 0)
+        controls.pack_start(play_button, False, False, 2)
+        controls.pack_start(pause_button, False, False, 2)
+        controls.pack_start(stop_button, False, False, 2)
+        controls.pack_start(self.slider, True, True, 0)
+
+        main_hbox = Gtk.HBox.new(False, 0)
+        main_hbox.pack_start(video_window, True, True, 0)
+        main_hbox.pack_start(self.streams_list, False, False, 2)
+
+        main_box = Gtk.VBox.new(False, 0)
+        main_box.pack_start(main_hbox, True, True, 0)
+        main_box.pack_start(controls, False, False, 0)
+
+        main_window.add(main_box)
+        main_window.set_default_size(640, 480)
+        main_window.show_all()
 
     def malm(self, to_add):
 
@@ -293,55 +248,55 @@ class Stream(threading.Thread):
         prev = None
         prev_name = None
         for n in to_add:
-            self.current_element = n[0]
-            self.current_name = n[1]
-            self.current_params = n[2]
-            # print("Current Element: %s" % self.current_element)
-            factory = Gst.ElementFactory.find(self.current_element)
+            current_element = n[0]
+            current_name = n[1]
+            current_params = n[2]
+            # print("Current Element: %s" % current_element)
+            factory = Gst.ElementFactory.find(current_element)
             if factory == None:
-                print('\n########## ERROR! No Element {0} found ##########\n'.format(self.current_element))
+                print('\n########## ERROR! No Element %s found ##########\n' % current_element)
                 break
-            self.element = factory.make(self.current_element, self.current_name)
-            if not self.element:
-                raise Exception('########## ERROR! cannot create element {} ##########\n'.format(self.current_element))
+            element = factory.make(current_element, current_name)
+            if not element:
+                raise Exception('########## ERROR! cannot create element %s ##########\n' % current_element)
                 break            
 
-            if self.current_name: setattr(self, self.current_name, self.element)
+            if current_name: setattr(self, current_name, element)
 
-            for parameter, value in self.current_params.items():
+            for parameter, value in current_params.items():
                 if parameter == 'caps':
                     caps = Gst.Caps.from_string(value)
-                    self.element.set_property('caps', caps)
+                    element.set_property('caps', caps)
                 else:
-                    self.element.set_property(parameter, value)
+                    element.set_property(parameter, value)
 
-            self.pipeline.add(self.element)
+            self.pipeline.add(element)
 
-            if self.current_name == 'jacksink':
+            if current_name == 'jacksink':
                 # print('===============================================================')
-                self.element.connect("no-more-pads", self.on_new_jackaudiosink_pad)
+                element.connect("no-more-pads", self.on_new_jackaudiosink_pad)
 
             if prev_name == "deinterleaver":
                 prev.connect("pad-added", self.on_new_deinterleave_pad)
             else:
                 if prev:
-                    link_status = prev.link(self.element)
+                    link_status = prev.link(element)
                     if link_status == False:
-                        print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev_name, self.current_element))
+                        print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev_name, current_element))
             
-            prev = self.element
-            prev_element = self.current_element
-            prev_name = self.current_name
-            prev_gst_name = self.element.get_name()
+            prev = element
+            prev_element = current_element
+            prev_name = current_name
+            prev_gst_name = element.get_name()    
 
-    def hallo(self, _bus, _message):
-        print('#########################################################################\n%s\n%s' % (_next, user_data) )
-        
+
+#### CALLBACK-FUNCTIONS ####
+
     def on_new_deinterleave_pad(self, element, pad):
         self.audio_counter += 1
         # self.deinterleave_pads[self.audio_counter] = pad
-        if self.audio_counter == self.audio_in_stream:
-            print("Connecting audio channel %s to stream number %s" % (self.audio_in_stream, self.streamnumber) )
+        if self.audio_counter == self.audio_to_stream:
+            print("STREAM: Connecting audio channel %s to stream number %s" % (self.audio_to_stream, self.streamnumber) )
             # print("# New pad added #")
             deint = pad.get_parent()
             # print("deint: %s" % deint)
@@ -374,9 +329,105 @@ class Stream(threading.Thread):
 
     def on_new_jackaudiosink_pad(self, element, pad):
         print('===============================================================')
-        
 
-    
+    # this function is called when the GUI toolkit creates the physical window
+    # that will hold the video
+    # at this point we can retrieve its handler and pass it to GStreamer
+    # through the XOverlay interface
+    def on_realize(self, widget):
+        window = widget.get_window()
+        window_handle = window.get_xid()
+
+        # pass it to playbin, which implements XOverlay and will forward
+        # it to the video sink
+        self.pipeline.set_window_handle(window_handle)
+        # self.pipeline.set_xwindow_id(window_handle)
+
+    # this function is called when the PLAY button is clicked
+    def on_play(self, button):
+        self.pipeline.set_state(Gst.State.PLAYING)
+        pass
+
+    # this function is called when the PAUSE button is clicked
+    def on_pause(self, button):
+        self.pipeline.set_state(Gst.State.PAUSED)
+        pass
+
+    # this function is called when the STOP button is clicked
+    def on_stop(self, button):
+        self.pipeline.set_state(Gst.State.READY)
+        pass
+
+    # this function is called when the main window is closed
+    def on_delete_event(self, widget, event):
+        self.on_stop(None)
+        Gtk.main_quit()
+
+    # this function is called every time the video window needs to be
+    # redrawn. GStreamer takes care of this in the PAUSED and PLAYING states.
+    # in the other states we simply draw a black rectangle to avoid
+    # any garbage showing up
+    def on_draw(self, widget, cr):
+        if self.state < Gst.State.PAUSED:
+            allocation = widget.get_allocation()
+
+            cr.set_source_rgb(0, 0, 0)
+            cr.rectangle(0, 0, allocation.width, allocation.height)
+            cr.fill()
+
+        return False
+
+    # this function is called when the slider changes its position.
+    # we perform a seek to the new position here
+    def on_slider_changed(self, range):
+        value = self.slider.get_value()
+        self.pipeline.seek_simple(Gst.Format.TIME,
+                                 Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                 value * Gst.SECOND)
+
+    # this function is called periodically to refresh the GUI
+    def refresh_ui(self):
+        current = -1
+
+        # we do not want to update anything unless we are in the PAUSED
+        # or PLAYING states
+        if self.state < Gst.State.PAUSED:
+            return True
+
+        # if we don't know it yet, query the stream duration
+        if self.duration == Gst.CLOCK_TIME_NONE:
+            ret, self.duration = self.pipeline.query_duration(Gst.Format.TIME)
+            if not ret:
+                print("ERROR: Could not query current duration")
+            else:
+                # set the range of the slider to the clip duration (in seconds)
+                self.slider.set_range(0, self.duration / Gst.SECOND)
+
+        ret, current = self.pipeline.query_position(Gst.Format.TIME)
+        if ret:
+            # block the "value-changed" signal, so the on_slider_changed
+            # callback is not called (which would trigger a seek the user
+            # has not requested)
+            self.slider.handler_block(self.slider_update_signal_id)
+
+            # set the position of the slider to the current pipeline position
+            # (in seconds)
+            self.slider.set_value(current / Gst.SECOND)
+
+            # enable the signal again
+            self.slider.handler_unblock(self.slider_update_signal_id)
+
+        return True
+
+    # this function is called when new metadata is discovered in the stream
+    def on_tags_changed(self, playbin, stream):
+        # we are possibly in a GStreamer working thread, so we notify
+        # the main thread of this event through a message in the bus
+        self.pipeline.post_message(
+            Gst.Message.new_application(
+                self.pipeline,
+                Gst.Structure.new_empty("tags-changed")))
+
     # this function is called when an error message is posted on the bus
     def on_error(self, bus, msg):
         err, dbg = msg.parse_error()
@@ -395,7 +446,7 @@ class Stream(threading.Thread):
     def on_state_changed(self, bus, msg):
         old, new, pending = msg.parse_state_changed()
         if not msg.src == self.pipeline:
-            # not from the pipeline, ignore
+            # not from the playbin, ignore
             return
 
         self.state = new
@@ -403,15 +454,13 @@ class Stream(threading.Thread):
             Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
 
         if old == Gst.State.READY and new == Gst.State.PAUSED:
-            pass
             # for extra responsiveness we refresh the GUI as soons as
             # we reach the PAUSED state
-        self.status = Gst.Element.state_get_name(new)
-        self.label = Gtk.Label(label="hallo %s" % self.status)
             # self.refresh_ui()
+            pass
+
     # extract metadata from all the streams and write it to the text widget
     # in the GUI
-
     def analyze_streams(self):
         # clear current contents of the widget
         buffer = self.streams_list.get_buffer()
@@ -468,13 +517,28 @@ class Stream(threading.Thread):
                     buffer.insert_at_cursor(
                         "  language: {0}\n".format(
                             str or "unknown"))
-                
+
+    # this function is called when an "application" message is posted on the bus
+    # here we retrieve the message posted by the on_tags_changed callback
     def on_application_message(self, bus, msg):
         if msg.get_structure().get_name() == "tags-changed":
             # if the message is the "tags-changed", update the stream info in
             # the GUI
-            self.analyze_streams()
+            # self.analyze_streams()
+            pass
 
+    @staticmethod
+    def __finalizer(pipeline, connection_handler, media_elements):
+        # Allow pipeline resources to be released
+        pipeline.set_state(Gst.State.NULL)
+
+        bus = pipeline.get_bus()
+        bus.remove_signal_watch()
+        bus.disconnect(connection_handler)
+
+        for element in media_elements:
+            element.dispose()
+    
     def on_debug(self, category, level, dfile, dfctn, dline, source, message, user_data):
         # print('Category: %s' % category)
         # print('Level: %s' % level)
@@ -492,10 +556,13 @@ class Stream(threading.Thread):
                 # Gst.DebugLevel.get_name(level), message.get()))
             pass
 
-    def exit_all(self):
-        ls = len(Settings.streams)
-        # print ('############# Länge: %s' % ls)
-        for stream in range(1, ls):
-            print('###########################################################################\n%s' % stream)
-            Settings.streams[stream].stop()
-        #Ui.on_delete_event
+if __name__ == '__main__':
+    p = Stream(1, Settings.video_in_name, Settings.audio_in_name)
+    # p.play()
+    p.thread.start()
+    time.sleep(5)
+    p.stop()
+    p.cleanup()
+    p.thread.join(timeout=5)
+    os._exit(1)
+    time.sleep(10)
