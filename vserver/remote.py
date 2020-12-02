@@ -26,18 +26,25 @@ class Remote():
     def __init__(self):
         pass
     def play(self, streamnumber, audio_no):
-        if Settings.streams[streamnumber] == None:
-            print('\REMOTE: Preparing videostream %s\n' % streamnumber)
-            Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
-        elif Settings.streams[streamnumber] != None:# TODO: Untested
-            print('REMOTE: First stopping the videostream %s\n' % streamnumber)# TODO: Untested
-            Settings.streams[streamnumber].stop()# TODO: Untested
-            Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
-        Settings.streams[streamnumber].audio_in_stream = audio_no
-        Settings.streams[streamnumber].start()
+        me = Settings.streams[streamnumber]
+        # Settings.streams[streamnumber]['stream'] = Player()
+        if Settings.streams[streamnumber]['status'] == None:
+            print('REMOTE: Preparing videostream %s with audiotrack %s' % (streamnumber, audio_no))
+            me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
+        # elif Settings.streams[streamnumber] != 'PAUSED':# TODO: Untested
+        #     print('REMOTE: First stopping the videostream %s\n' % streamnumber)# TODO: Untested
+        #     Settings.streams[streamnumber].stop()# TODO: Untested
+        #     Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
+        me['audio_to_stream'] = audio_no
+        # Settings.streams[streamnumber]['thread'].start()
+        me['stream'].thread.start()
+        # Settings.streams[streamnumber]['stream'].start()
 
     def stop(self, streamnumber):
-        if Settings.streams[streamnumber] != None:
+        me = Settings.streams[streamnumber]
+        if me['stream'] != None:
             print('REMOTE: Stopping video %s\n' % streamnumber)
-            Settings.streams[streamnumber].stop()
+            me['stream'].stop()
+            me['stream'].cleanup()
+            me['thread'].join()
             print(Settings.streams)
