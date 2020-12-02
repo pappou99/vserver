@@ -34,16 +34,13 @@ class PossibleInputs:
                 'Decklink-Card' : [['decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True}]],
                 'Test picture generator' : [['videotestsrc', None, {'is-live' : True}]],
                 'Webcam' : [['v4l2src', None, {}]]
-                'Test picture generator' : [
-                    ['videotestsrc', None, {'is-live' : True}]
-              ]
             }
         a_input_list = {
                 'Decklink-Card' : [
                     ['decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : 8, 'do-timestamp' : True}]
               ],
                 'Test sound generator' : [
-                    ['audiotestsrc', None, {'is-live' : 1, 'do-timestamp' : True, 'wave': 'pink-noise', 'volume' : 0.03}] #, '!', 'audio/x-raw,channels=8'
+                    ['audiotestsrc', None, {'is-live' : True, 'do-timestamp' : True, 'wave': 'pink-noise', 'volume' : 0.03}] #, '!', 'audio/x-raw,channels=8'
               ]
             }
         return v_input_list, a_input_list
