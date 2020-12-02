@@ -31,19 +31,16 @@ class PossibleInputs:
   
     def List(self, device):
         v_input_list = {
-                'Decklink-Card' : [
-                    ['decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True}]
-               ],
-                'Test picture generator' : [
-                    ['videotestsrc', None, {'is-live' : True}]
-              ]
+                'Decklink-Card' : [['decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True}]],
+                'Test picture generator' : [['videotestsrc', None, {'is-live' : True}]],
+                'Webcam' : [['v4l2src', None, {}]]
             }
         a_input_list = {
                 'Decklink-Card' : [
                     ['decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : 8, 'do-timestamp' : True}]
               ],
                 'Test sound generator' : [
-                    ['audiotestsrc', None, {'is-live' : 1, 'do-timestamp' : True}] #, '!', 'audio/x-raw,channels=8'
+                    ['audiotestsrc', None, {'is-live' : True, 'do-timestamp' : True, 'wave': 'pink-noise', 'volume' : 0.03}] #, '!', 'audio/x-raw,channels=8'
               ]
             }
         return v_input_list, a_input_list
@@ -100,7 +97,13 @@ class SelectThe:
 
     def __init__(self):
         self.settings =  {
-                # name    :   container,      [videoformat1, videoformat2, ...], [audioformat1, audioformat2, ...], payloader,      payloader_string
+                # 'containername'    :   [
+                    # ['container', {'container_option1' : value1, 'container_option2' : value2}],
+                    # [videoformat1, videoformat2, ...],
+                    # [audioformat1, audioformat2, ...],
+                    # ['payloader', {}],
+                    # b'payloader_string'
+
                 'Choose nothing and exit' : '',
                 'ts'    :   [
                     ['mpegtsmux', {'alignment' : 7}],    
@@ -118,9 +121,9 @@ class SelectThe:
                     ],
                 'flv'   :   [
                     ['flvmux', {'streamable' : True}], 
-                    ['x-flash-video', 'x-flash-screen', 'x-vp6-flash', 'x-vp6-alpha', 'video/x-h264'], 
-                    ['x-adpcm', 'audio/mpeg_v1', 'mpeg3', 'audio/mpeg_4', 'audio/mpeg_2', 'x-nellymoser', 'x-raw', 'x-alaw', 'x-mulaw', 'x-speex'], 
-                    [], 
+                    ['video/x-flash-video', 'video/x-flash-screen', 'video/x-vp6-flash', 'video/x-vp6-alpha', 'video/x-h264'], 
+                    ['audio/x-adpcm', 'audio/mpeg_1', 'audio/mpeg_3', 'audio/mpeg_4', 'audio/mpeg_2', 'audio/x-nellymoser', 'audio/x-raw', 'audio/x-alaw', 'audio/x-mulaw', 'audio/x-speex'], 
+                    [],
                     ''
                     ]
             }
@@ -153,7 +156,7 @@ class SelectThe:
             }
 
         self.a_enc_list = {
-                'audio/mpeg_v1' :   [
+                'audio/mpeg_1' :   [
                             ['lamemp3enc', {}, 'mpegaudioparse', {}] 
                            ],
                 # 'audio/mpeg_2' : [['faac', {}]],

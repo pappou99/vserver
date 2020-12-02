@@ -20,12 +20,10 @@
 #
 
 import paho.mqtt.client as mqtt
-import threading
+from threading import Thread
 from vServer_settings import Settings
-from vServer_stream import Stream
-
-global base_topic = []
-base_topic.extend(Settings.mqtt_topic)
+from vserver.stream import Stream
+from vserver.remote import Remote
 
 class MqttCommands():
     """Class MqttCommands
@@ -35,39 +33,38 @@ class MqttCommands():
     play = b'play'
     stop = b'stop'
 
-class MqttRemote(threading.Thread):
+class MqttRemote(Thread):
     """Class MqttRemote
     Enables MQTT remote support
     Topics to react to and server connection settings to are configured in the vServer_settings.py
     """
 
-    def __init__(self, host=Settings.mqtt_server, port=Settings.mqtt_port, topic=Settings.mqtt_topic):
-        threading.Thread.__init__(self)
+    def __init__(self, sub_topic, host=Settings.mqtt_server, port=Settings.mqtt_port, base_topic=Settings.mqtt_topic):
+        super().__init__(name='mqtt')
         self.host = host
+        self.port = port
 
         ###Building the topic we want to subscribe
-        self.topic = base_topic.copy()
-        self.topic.append('#')
+        self.topic = []
+        self.topic.extend(base_topic)
+        self.topic.append(sub_topic)
         # print(self.topic)
         self.topic_str = "/".join(self.topic)
 
         self.client = mqtt.Client()
-        print("user: %s, pass: %s" %(Settings.mqtt_user, Settings.mqtt_pass))
         self.client.username_pw_set(Settings.mqtt_user, Settings.mqtt_pass)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_publish = self.on_publish
         self.client.on_subscribed = self.on_subscribed
 
-        print('MQTT: Trying to connect to server at %s:%s' % (host,port))
-        self.client.connect(host, port, 60)
-        # status = self.client.connect(host, port, 60)
-        # print("Status of MQTT-Server: %s" % status)
-
     def run(self):
         """Function to run the MQTT-Client
         """
-        
+        print('MQTT: Connecting to server at %s:%s' % (self.host, self.port))
+        self.client.connect(self.host, self.port, 60)
+        # status = self.client.connect(self.host, self.port, 60)
+        # print("Status of MQTT-Server: %s" % status)
         self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
@@ -77,7 +74,7 @@ class MqttRemote(threading.Thread):
 
         if rc == 0:
             self.client.subscribe(self.topic_str)
-            print('MQTT: Listening to topic: %s' % self.topic_str)
+            print('MQTT: Successfully connected to %s at port %s\nMQTT: Listening to topic: %s' % (self.host, self.port, self.topic_str))
             # print("MQTT: Connected to MQTT-Server at {0} with result code {1}".format(self.host, rc))
         else:
             print('MQTT: Bad connection, returned code: %s' % rc)
@@ -87,31 +84,37 @@ class MqttRemote(threading.Thread):
         Callback function when a message is received.
         """
         
-        print("\nMQTT: Message received on topic:\n{0}\nmessage: {1}".format(msg.topic, msg.payload))
+        print("\nMQTT: Message received on topic: %s | message: %s" % (msg.topic, msg.payload))
         topics = msg.topic.split("/")
         # print(topics)
         video_no = int(topics[-3])
         audio_no = int(topics[-1])
-        if msg.payload == MqttCommands.play:
+        remote = Remote()#TODO wieso? -> Thread
+        if msg.payload == ('' or b''):
+            print('MQTT: No payload was submitted! Don\'t know what to do!')
+        elif msg.payload == MqttCommands.play:
             # print(Settings.streams[video_no].__dict__)
-            print("\nMQTT: Video {0} soll mit Audio {1} gestartet werden".format(video_no, audio_no))#
-            # print(Settings.streams)
-            if Settings.streams[video_no] == None:
-                print('\nMQTT: Preparing videostream %s\n' % video_no)
-                Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
-            elif Settings.stream[video_no] != None:# TODO: Untested
-                print('First stopping the videostream %s\n' % video_no)# TODO: Untested
-                Settings.streams[video_no].stop()# TODO: Untested
-                Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
-            Settings.streams[video_no].audio_in_stream = audio_no
-            Settings.streams[video_no].start()
+            print('MQTT: Received play command for stream %s with audio %s' % (video_no, audio_no))#
+            remote.play(video_no, audio_no)
+            # # print(Settings.streams)
+            # if Settings.streams[video_no] == None:
+            #     print('\nMQTT: Preparing videostream %s\n' % video_no)
+            #     Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
+            # elif Settings.streams[video_no] != None:# TODO: Untested
+            #     print('MQTT: First stopping the videostream %s\n' % video_no)# TODO: Untested
+            #     Settings.streams[video_no].stop()# TODO: Untested
+            #     Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
+            # Settings.streams[video_no].audio_in_stream = audio_no
+            # Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
-            if Settings.streams[video_no] != None:
-                print('MQTT: Stopping video %s\n' % video_no)
-                Settings.streams[video_no].stop()
-                print(Settings.streams)
+            print('MQTT: Received stop command for stream %s' % video_no)
+            remote.stop(video_no)
+            # if Settings.streams[video_no] != None:
+            #     print('MQTT: Stopping video %s\n' % video_no)
+            #     Settings.streams[video_no].stop()
+            #     print(Settings.streams)
 
-    def on_publish(self, client, userdata, messageid):
+    def on_publish(self, client, userdata, msg):
         pass
 
     def on_subscribed(self, client, userdata, msg):
