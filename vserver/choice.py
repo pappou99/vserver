@@ -31,9 +31,9 @@ class PossibleInputs:
   
     def List(self, device):
         v_input_list = {
-                'Decklink-Card' : [
-                    ['decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True}]
-               ],
+                'Decklink-Card' : [['decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True}]],
+                'Test picture generator' : [['videotestsrc', None, {'is-live' : True}]],
+                'Webcam' : [['v4l2src', None, {}]]
                 'Test picture generator' : [
                     ['videotestsrc', None, {'is-live' : True}]
               ]
