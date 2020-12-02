@@ -114,8 +114,8 @@ class main:
         # Gtk.main()
 
         ### enable MQTT-remote support ###
-        remote = mqtt.MqttRemote(sub_topic='#')
-        remote.start()
+        mqtt_client = mqtt.MqttRemote(sub_topic='#')
+        mqtt_client.start()
         
 if __name__ == '__main__':
     try:
