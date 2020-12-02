@@ -17,3 +17,11 @@ bin/*
 include/*
 lib/*
 share/*
+
+pyvenv.cfg
+
+lib64
+
+vserver/Widget.py
+
+working_basic_tutorial_5.py
