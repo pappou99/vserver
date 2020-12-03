@@ -22,13 +22,15 @@
 from vServer_settings import Settings
 from vserver.stream import Stream
 
+
 class Remote():
     def __init__(self):
         pass
+
     def play(self, streamnumber, audio_no):
         me = Settings.streams[streamnumber]
         # Settings.streams[streamnumber]['stream'] = Player()
-        if Settings.streams[streamnumber]['status'] == None:
+        if Settings.streams[streamnumber]['status'] is None:
             print('REMOTE: Preparing videostream %s with audiotrack %s' % (streamnumber, audio_no))
             me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
         # elif Settings.streams[streamnumber] != 'PAUSED':# TODO: Untested
