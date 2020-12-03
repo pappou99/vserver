@@ -2,7 +2,7 @@
 .vscode
 *.sdp
 .vscode/settings.json
-__pycache__/*
+**/__pycache__/*
 */__pycache__
 vserver/ui/__pycache__
 __pycache__/gstream_choice_inanity.cpython-36.pyc
@@ -17,13 +17,8 @@ bin/*
 include/*
 lib/*
 share/*
-
-pyvenv.cfg
-
+pyve
 lib64
-
 vserver/Widget.py
-
 working_basic_tutorial_5.py
-
 *.pyc
