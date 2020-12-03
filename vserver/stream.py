@@ -5,8 +5,6 @@ import sys
 import time
 from threading import Thread
 
-import weakref
-
 import gi
 
 gi.require_version('Gst', '1.0')
