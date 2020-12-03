@@ -8,6 +8,7 @@ from threading import Thread
 import weakref
 
 import gi
+
 gi.require_version('Gst', '1.0')
 gi.require_version('Gtk', '3.0')
 # gi.require_version('GdkX11', '3.0')
@@ -18,26 +19,30 @@ from vServer_settings import Settings
 from vserver.choice import PossibleInputs
 from vserver.jackconnect import Jacking
 
+
 # http://docs.gstreamer.com/display/GstSDK/Basic+tutorial+5%3A+GUI+toolkit+integration
 
 
 class Stream():
     killswitch = False
+
     def __init__(self, streamnumber, video_in_name, audio_in_name):
 
-        if Settings.debug == True:
+        # initialize GStreamer
+        Gst.init(sys.argv)
+        self.loop = GLib.MainLoop()
+
+        if Settings.debug:
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
             # print("Debug-Level: %s" % level)
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(Gst.DebugLevel.WARNING)#none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
-            Gst.debug_add_log_function(self.on_debug, None)
-            Gst.debug_remove_log_function(Gst.debug_log_default)
+                Gst.debug_set_default_threshold(
+                    Gst.DebugLevel.ERROR)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+            Gst.debug_add_log_function(self.on_debug, None)  # TODO Bauchen wird die noch?
+            Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
         # initialize GTK
         # Gtk.init(sys.argv)
-
-        # initialize GStreamer
-        Gst.init(sys.argv)
 
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
@@ -57,9 +62,10 @@ class Stream():
 
         # # set up URI
         # self.malm([
-        #     ["playbin", "playbin", {"uri" : "http://ftp.halifax.rwth-aachen.de/blender/demo/movies/Sintel.2010.1080p.mkv"}]
+        #     ["playbin", "playbin", {
+        #     "uri" : "http://ftp.halifax.rwth-aachen.de/blender/demo/movies/Sintel.2010.1080p.mkv"
+        #     }]
         # ])
-
 
         # instruct the bus to emit signals for each received message
         # and connect to the interesting signals
@@ -83,19 +89,21 @@ class Stream():
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
-            ['capsfilter', None, {'caps' : 'audio/x-raw,channels=8,rate=48000'}],
+            ['capsfilter', None, {'caps': 'audio/x-raw,channels=8,rate=48000'}],
             ['tee', 'audio', {}],
             ['deinterleave', 'deinterleaver', {}],
             ['queue', 'd_follower', {}],
-            ['capsfilter', None, {'caps' : 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s' % Settings.audio_channels_to_stream}],
+            ['capsfilter', None, {
+                'caps': 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s'
+                        % Settings.audio_channels_to_stream}],
             # ['queue', 'd_follower', {}],
-            ['interleave', None, {'channel-positions-from-input' : True}],
+            ['interleave', None, {'channel-positions-from-input': True}],
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
-            [Settings.a_enc[0], 'a_enc', Settings.a_enc[1] ],
-            [Settings.a_enc[2], 'a_parser', Settings.a_enc[3] ]
-       ])
+            [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]],
+            [Settings.a_enc[2], 'a_parser', Settings.a_enc[3]]
+        ])
 
         # Jack sink
         self.malm([
@@ -103,35 +111,37 @@ class Stream():
             ['audioconvert', None, {}],
             ['audioresample', None, {}],
             ['queue', None, {}],
-            ['jackaudiosink', 'jacksink', {'connect' : 0, 'client-name' : self.devicename}]
-       ])
+            ['jackaudiosink', 'jacksink', {'connect': 0, 'client-name': self.devicename}]
+        ])
         self.audio.link(getattr(self, 'jack'))
 
         # Video input
         self.malm([
             videoinput,
-            ['textoverlay', None, {'text' : '%s:%s' % (Settings.hostname, self.devicename), 'valignment' : 'top', 'halignment' : 'left', 'font-desc' : 'Sans, 12'}],
-            ['clockoverlay', None, {'halignment' : 'right', 'valignment' : 'top', 'text' : 'München', 'shaded-background' : True, 'font-desc' : 'Sans, 12'}],
+            ['textoverlay', None,
+             {'text': '%s:%s' % (Settings.hostname, self.devicename), 'valignment': 'top', 'halignment': 'left',
+              'font-desc': 'Sans, 12'}],
+            ['clockoverlay', None,
+             {'halignment': 'right', 'valignment': 'top', 'text': 'München', 'shaded-background': True,
+              'font-desc': 'Sans, 12'}],
             ['videoconvert', None, {}],
             ['videoscale', None, {}],
-            ['capsfilter', None, {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
+            ['capsfilter', None,
+             {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
             # [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
             [Settings.muxer[0], 'muxer', Settings.muxer[1]],
             # [Settings.payloader[0], 'payloader', Settings.payloader[1]],
             # ['udpsink', 'netsink', {'host': Settings.stream_ip, 'port' : self.port}]
-            ['rtmpsink', 'netsink', {'location': '%s' % self.location } ]
-       ])
+            ['rtmpsink', 'netsink', {'location': '%s' % self.location}]
+        ])
 
         # self.a_parser.link(getattr(self, 'muxer'))
         self.a_parser.link(getattr(self, 'muxer'))
 
-        if Settings.debug == True:
-            with open('dot/Dot_Video%d_after_malm.dot' % self.streamnumber,'w') as dot_file:
-                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        self.write_dotfile(self.streamnumber, 'malm')
 
         self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
-        
 
     # set the playbin to PLAYING (start playback), register refresh callback
     # and start the GTK main loop
@@ -146,45 +156,28 @@ class Stream():
 
             deint = self.pipeline.get_by_name('deinterleaver')
             follower = self.pipeline.get_by_name('d_follower')
-            deint.link_pads('src_%s' % (self.audio_to_stream-1), follower, None)
+            deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
 
             audio_stream = self.pipeline.get_by_name('a_enc')
             stream_muxer = self.pipeline.get_by_name('muxer')
             audio_stream.link_pads('src', stream_muxer, None)
             time.sleep(5)
 
-            if Settings.debug == True:
-                print('Writing dot file for debug information after pause status of pipeline')
-                with open('dot/Dot_Video%d_after_pause.dot' % self.streamnumber,'w') as dot_file:
-                    dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-            
+            self.write_dotfile(self.streamnumber, 'pause')
+
             ret = self.pipeline.set_state(Gst.State.PLAYING)
             if ret == Gst.StateChangeReturn.FAILURE:
                 print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
                 sys.exit(1)
 
-            if Settings.debug == True:
-                print('Writing dot file for debug information after play status of pipeline')
-                with open('dot/Dot_Video%d_after_play.dot' % self.streamnumber,'w') as dot_file:
-                    dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-            else:
-                if self.streamnumber == 1:
-                    with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (self.streamnumber, Settings.v_enc[0], Settings.a_enc[0]),'w') as dot_file:
-                        dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+            self.write_dotfile(self.streamnumber, 'play')
 
             jackaudio = Jacking()
             jackaudio.connect(self.streamnumber, self.devicename)
 
-            # register a function that GLib will call every second
-            # GLib.timeout_add_seconds(1, self.refresh_ui)
-
-            # start the GTK main loop. we will not regain control until
-            # Gtk.main_quit() is called
-            # Gtk.main()
-            # free resources
-            self.loop = GLib.MainLoop()
             self.loop.run()
         finally:
+            # free resources
             self.cleanup()
 
     def stop(self):
@@ -197,6 +190,17 @@ class Stream():
         if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
             self.pipeline = None
+
+    def write_dotfile(self, videonumber, status, ):
+        if Settings.debug:
+            print('DEBUG: Writing dot file for debug information after %s status of pipeline' % status)
+            with open('dot/Dot_Video%d_after_%s.dot' % (videonumber, status), 'w') as dot_file:
+                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+        else:
+            if videonumber == 1:
+                with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (
+                        videonumber, Settings.v_enc[0], Settings.a_enc[0]), 'w') as dot_file:
+                    dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
     def build_ui(self):
         main_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
@@ -259,7 +263,7 @@ class Stream():
             element = factory.make(current_element, current_name)
             if not element:
                 raise Exception('########## ERROR! cannot create element %s ##########\n' % current_element)
-                break            
+                break
 
             if current_name: setattr(self, current_name, element)
 
@@ -283,20 +287,19 @@ class Stream():
                     link_status = prev.link(element)
                     if link_status == False:
                         print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev_name, current_element))
-            
+
             prev = element
             prev_element = current_element
             prev_name = current_name
-            prev_gst_name = element.get_name()    
+            prev_gst_name = element.get_name()
 
-
-#### CALLBACK-FUNCTIONS ####
+        #### CALLBACK-FUNCTIONS ####
 
     def on_new_deinterleave_pad(self, element, pad):
         self.audio_counter += 1
         # self.deinterleave_pads[self.audio_counter] = pad
         if self.audio_counter == self.audio_to_stream:
-            print("STREAM: Connecting audio channel %s to stream number %s" % (self.audio_to_stream, self.streamnumber) )
+            print("STREAM: Connecting audio channel %s to stream number %s" % (self.audio_to_stream, self.streamnumber))
             # print("# New pad added #")
             deint = pad.get_parent()
             # print("deint: %s" % deint)
@@ -325,7 +328,6 @@ class Stream():
             self.pipeline.set_state(Gst.State.PLAYING)
         # deinterleave = pad.get_parent()
         # pipeline = deinterleave.get_parent()
-
 
     def on_new_jackaudiosink_pad(self, element, pad):
         print('===============================================================')
@@ -362,28 +364,6 @@ class Stream():
     def on_delete_event(self, widget, event):
         self.on_stop(None)
         Gtk.main_quit()
-
-    # this function is called every time the video window needs to be
-    # redrawn. GStreamer takes care of this in the PAUSED and PLAYING states.
-    # in the other states we simply draw a black rectangle to avoid
-    # any garbage showing up
-    def on_draw(self, widget, cr):
-        if self.state < Gst.State.PAUSED:
-            allocation = widget.get_allocation()
-
-            cr.set_source_rgb(0, 0, 0)
-            cr.rectangle(0, 0, allocation.width, allocation.height)
-            cr.fill()
-
-        return False
-
-    # this function is called when the slider changes its position.
-    # we perform a seek to the new position here
-    def on_slider_changed(self, range):
-        value = self.slider.get_value()
-        self.pipeline.seek_simple(Gst.Format.TIME,
-                                 Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                 value * Gst.SECOND)
 
     # this function is called periodically to refresh the GUI
     def refresh_ui(self):
@@ -527,18 +507,18 @@ class Stream():
             # self.analyze_streams()
             pass
 
-    @staticmethod
-    def __finalizer(pipeline, connection_handler, media_elements):
-        # Allow pipeline resources to be released
-        pipeline.set_state(Gst.State.NULL)
+    # @staticmethod
+    # def __finalizer(pipeline, connection_handler, media_elements):
+    #     # Allow pipeline resources to be released
+    #     pipeline.set_state(Gst.State.NULL)
+    #
+    #     bus = pipeline.get_bus()
+    #     bus.remove_signal_watch()
+    #     bus.disconnect(connection_handler)
+    #
+    #     for element in media_elements:
+    #         element.dispose()
 
-        bus = pipeline.get_bus()
-        bus.remove_signal_watch()
-        bus.disconnect(connection_handler)
-
-        for element in media_elements:
-            element.dispose()
-    
     def on_debug(self, category, level, dfile, dfctn, dline, source, message, user_data):
         # print('Category: %s' % category)
         # print('Level: %s' % level)
@@ -553,8 +533,9 @@ class Stream():
             pass
         else:
             # print('Debug {}: {}'.format(
-                # Gst.DebugLevel.get_name(level), message.get()))
+            # Gst.DebugLevel.get_name(level), message.get()))
             pass
+
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)
