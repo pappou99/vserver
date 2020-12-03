@@ -43,6 +43,7 @@ from vserver.ui import ui
 
 timeout = 2
 
+
 class main:
     """Class main
     
@@ -51,24 +52,25 @@ class main:
     Benchmark: Uses nmon to create a benchmark log
     MQTT: Enables MQTT supprt for remoting via mqtt
     TODO Ui: Not working yet
-    """    
-    _interactive = None
+    """
+    _interactive_user_choice = None
+
     @classmethod
     def get_input(cls):
-        cls._interactive = input('')
+        cls._interactive_user_choice = input('')
         return
 
     def __init__(self):
         Settings.hostname = socket.gethostname()
 
-        if Settings.interactive == True:
+        if Settings.interactive:
             print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
             get_input_thread = Thread(target=self.get_input, name='interactivity')
             get_input_thread.daemon = True
             get_input_thread.start()
             get_input_thread.join(timeout=timeout)
 
-            if (self._interactive) != None:
+            if self._interactive_user_choice is not None:
                 os.system('clear')
                 select = SelectThe()
                 Settings.muxer = select.muxer
@@ -85,25 +87,25 @@ class main:
 
         # my_inputs = PossibleInputs.Define(PossibleInputs)
 
-        ### enable the following line for interactive input selection
+        # enable the following line for interactive input selection
+        #
         # PossibleInputs.Define(PossibleInputs)
         # self.v_in = my_inputs[0]
-        print("Video : %s" % Settings.video_in_name)
+        # print("Video : %s" % Settings.video_in_name)
         # self.a_in = my_inputs[1]
-        print("Audio: %s"  % Settings.audio_in_name)
-        print("Creating streams\n")
+        # print("Audio: %s" % Settings.audio_in_name)
 
-        ### create Benchmark-test-files via nmon ###
+        # create Benchmark-test-files via nmon
         Benchmark()
 
-        ### create streams
+        # create streams
+        print("Creating streams\n")
         for streamnumber in range(1, Settings.num_streams + 1, 1):
-        #     # streamnumber = inp_no + 1
-        #     print('88888888888888888888888888888888 STREAMNUMBER: %s' % streamnumber)
             Settings.streams.append(dict())
             Settings.streams[streamnumber]['status'] = None
-            Settings.streams[streamnumber]['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
-        
+            Settings.streams[streamnumber]['stream'] = Stream(streamnumber, Settings.video_in_name,
+                                                              Settings.audio_in_name)
+
         # if Settings.instant_play == True:
         #     Settings.streams[streamnumber].start()# instantly play video for testing
 
@@ -113,10 +115,11 @@ class main:
         # Settings.main_window.show_all()
         # Gtk.main()
 
-        ### enable MQTT-remote support ###
+        # enable MQTT-remote support
         mqtt_client = mqtt.MqttRemote(sub_topic='#')
         mqtt_client.start()
-        
+
+
 if __name__ == '__main__':
     try:
         main = main()
