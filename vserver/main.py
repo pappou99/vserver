@@ -102,9 +102,11 @@ class Main:
         print("Creating streams\n")
         for streamnumber in range(1, Settings.num_streams + 1, 1):
             Settings.streams.append(dict())
-            Settings.streams[streamnumber]['status'] = None
-            Settings.streams[streamnumber]['stream'] = Stream(streamnumber, Settings.video_in_name,
-                                                              Settings.audio_in_name)
+            me = Settings.streams[streamnumber]
+            me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
+            status = me['status']
+            # me['status'] = status = me['stream'].pipeline.get_state(5)
+            me['statusname'] = Gst.Element.state_get_name(status)
 
         # if Settings.instant_play == True:
         #     Settings.streams[streamnumber].start()# instantly play video for testing
