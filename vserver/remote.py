@@ -47,6 +47,7 @@ class Remote():
         if me['stream'] != None:
             print('REMOTE: Stopping video %s\n' % streamnumber)
             me['stream'].stop()
-            me['stream'].cleanup()
             me['thread'].join()
-            print(Settings.streams)
+            me['stream'].cleanup()
+            for i in Settings.streams:
+                print(i)
