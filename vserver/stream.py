@@ -383,7 +383,8 @@ class Stream():
         # we do not want to update anything unless we are in the PAUSED
         # or PLAYING states
         if self.pipe_status < Gst.State.PAUSED:
-            Settings.ui_elements[self.streamnumber]['label'].set_label()
+            Settings.ui_elements[self.streamnumber]['status'].set_label(
+                '%s' % self.me['statusname'])
             return True
 
         # # if we don't know it yet, query the stream duration
