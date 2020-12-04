@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
 
-from vserver.main import main
+from vserver.main import Main
 
-main()
+Main()

@@ -30,9 +30,10 @@ import socket
 import os
 from threading import Thread
 
-# import gi
-# gi.require_version("Gtk", "3.0")
-# from gi.repository import Gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from gi.repository import Gst
 
 import vserver.mqtt as mqtt
 from vserver.choice import SelectThe, PossibleInputs
@@ -44,8 +45,8 @@ from vserver.ui import ui
 timeout = 2
 
 
-class main:
-    """Class main
+class Main:
+    """Class Main
     
     Starts with default settings placed in vServer_settings.py or with interactive user input if needed.
     Additional modules loaded:
@@ -102,18 +103,20 @@ class main:
         print("Creating streams\n")
         for streamnumber in range(1, Settings.num_streams + 1, 1):
             Settings.streams.append(dict())
-            Settings.streams[streamnumber]['status'] = None
-            Settings.streams[streamnumber]['stream'] = Stream(streamnumber, Settings.video_in_name,
-                                                              Settings.audio_in_name)
+            me = Settings.streams[streamnumber]
+            me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
+            status = me['status']
+            # me['status'] = status = me['stream'].pipeline.get_state(5)
+            me['statusname'] = Gst.Element.state_get_name(status)
 
         # if Settings.instant_play == True:
         #     Settings.streams[streamnumber].start()# instantly play video for testing
 
         # ### create gui ###
-        # Settings.main_window = ui.Ui()
-        # Settings.main_window.connect("destroy", Gtk.main_quit)
-        # Settings.main_window.show_all()
-        # Gtk.main()
+        Settings.ui = ui.Ui()
+        Settings.ui.connect("destroy", Gtk.main_quit)
+        Settings.ui.show_all()
+        Gtk.main()
 
         # enable MQTT-remote support
         mqtt_client = mqtt.MqttRemote(sub_topic='#')
@@ -122,6 +125,6 @@ class main:
 
 if __name__ == '__main__':
     try:
-        main = main()
+        main = Main()
     except KeyboardInterrupt:
         Stream.exit_all

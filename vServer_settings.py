@@ -56,7 +56,7 @@ class Settings:
     a_enc = ['lamemp3enc', {}, 'mpegaudioparse', {}]
     num_streams = 2
     
-    audio_channels_to_madi = 2
+    audio_channels_to_madi = 1#should be 8 for real life
     audio_channels_to_stream = 1
     default_audio_to_stream = 1
     
@@ -72,4 +72,4 @@ class Settings:
     mqtt_pass = Secrets.mqtt_pass
 
     ### Ui
-    main_window = None
+    ui_elements = [None]

@@ -11,7 +11,9 @@ gi.require_version('Gst', '1.0')
 gi.require_version('Gtk', '3.0')
 # gi.require_version('GdkX11', '3.0')
 # gi.require_version('GstVideo', '1.0')
-from gi.repository import Gst, GLib
+from gi.repository import Gst
+from gi.repository import GLib
+from gi.repository import GObject
 
 from vServer_settings import Settings
 from vserver.choice import PossibleInputs
@@ -21,6 +23,7 @@ from vserver.jackconnect import Jacking
 # http://docs.gstreamer.com/display/GstSDK/Basic+tutorial+5%3A+GUI+toolkit+integration
 
 
+
 class Stream():
     killswitch = False
 
@@ -28,7 +31,11 @@ class Stream():
 
         # initialize GStreamer
         Gst.init(sys.argv)
+        GObject.threads_init()
         self.loop = GLib.MainLoop()
+
+        # register a function that GLib will call every second
+        GLib.timeout_add_seconds(1, self.refresh_ui)
 
         if Settings.debug:
             Gst.debug_set_active(True)
@@ -50,7 +57,7 @@ class Stream():
         self.audio_counter = 0
         self.me = Settings.streams[streamnumber]
 
-        self.state = Gst.State.NULL
+        self.pipe_status = self.me['status'] = Gst.State.NULL
         self._elements = []
         self.duration = Gst.CLOCK_TIME_NONE
         self.pipeline = Gst.Pipeline()
@@ -67,13 +74,13 @@ class Stream():
 
         # instruct the bus to emit signals for each received message
         # and connect to the interesting signals
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
+        self.bus = self.pipeline.get_bus()
+        self.bus.add_signal_watch()
 
-        bus.connect("message::error", self.on_error)
-        bus.connect("message::eos", self.on_eos)
-        bus.connect("message::state-changed", self.on_state_changed)
-        bus.connect("message::application", self.on_application_message)
+        self.bus.connect("message::error", self.on_error)
+        self.bus.connect("message::eos", self.on_eos)
+        self.bus.connect("message::state-changed", self.on_state_changed)
+        self.bus.connect("message::application", self.on_application_message)
 
         inp = PossibleInputs()
         in_options = inp.Generate(video_in_name, audio_in_name, self.stream_id)
@@ -152,14 +159,7 @@ class Stream():
                 print("ERROR: Unable to set the pipeline to the pause state. Is Jack running?")
                 sys.exit(1)
 
-            deint = self.pipeline.get_by_name('deinterleaver')
-            follower = self.pipeline.get_by_name('d_follower')
-            deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
-
-            audio_stream = self.pipeline.get_by_name('a_enc')
-            stream_muxer = self.pipeline.get_by_name('muxer')
-            audio_stream.link_pads('src', stream_muxer, None)
-            time.sleep(5)
+            self.connect_stream()
 
             self.write_dotfile(self.streamnumber, 'pause')
 
@@ -178,6 +178,15 @@ class Stream():
             # free resources
             self.cleanup()
 
+    def connect_stream(self):
+        deint = self.pipeline.get_by_name('deinterleaver')
+        follower = self.pipeline.get_by_name('d_follower')
+        deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
+        audio_stream = self.pipeline.get_by_name('a_enc')
+        stream_muxer = self.pipeline.get_by_name('muxer')
+        audio_stream.link_pads('src', stream_muxer, None)
+        time.sleep(5)
+
     def stop(self):
         self.loop.quit()
         self.pipeline.set_state(Gst.State.READY)
@@ -187,7 +196,11 @@ class Stream():
     def cleanup(self):
         if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
+            self.bus.remove_signal_watch()
             self.pipeline = None
+        self.me['status'] = None
+        # self.me['stream'] = None
+        # self.me['thread'] = None
 
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
@@ -365,37 +378,38 @@ class Stream():
 
     # this function is called periodically to refresh the GUI
     def refresh_ui(self):
-        current = -1
+        # current = -1
 
         # we do not want to update anything unless we are in the PAUSED
         # or PLAYING states
-        if self.state < Gst.State.PAUSED:
+        if self.pipe_status < Gst.State.PAUSED:
+            Settings.ui_elements[self.streamnumber]['label'].set_label()
             return True
 
-        # if we don't know it yet, query the stream duration
-        if self.duration == Gst.CLOCK_TIME_NONE:
-            ret, self.duration = self.pipeline.query_duration(Gst.Format.TIME)
-            if not ret:
-                print("ERROR: Could not query current duration")
-            else:
-                # set the range of the slider to the clip duration (in seconds)
-                self.slider.set_range(0, self.duration / Gst.SECOND)
+        # # if we don't know it yet, query the stream duration
+        # if self.duration == Gst.CLOCK_TIME_NONE:
+        #     ret, self.duration = self.pipeline.query_duration(Gst.Format.TIME)
+        #     if not ret:
+        #         print("ERROR: Could not query current duration")
+        #     else:
+        #         # set the range of the slider to the clip duration (in seconds)
+        #         self.slider.set_range(0, self.duration / Gst.SECOND)
 
-        ret, current = self.pipeline.query_position(Gst.Format.TIME)
-        if ret:
-            # block the "value-changed" signal, so the on_slider_changed
-            # callback is not called (which would trigger a seek the user
-            # has not requested)
-            self.slider.handler_block(self.slider_update_signal_id)
+        # ret, current = self.pipeline.query_position(Gst.Format.TIME)
+        # if ret:
+        #     # block the "value-changed" signal, so the on_slider_changed
+        #     # callback is not called (which would trigger a seek the user
+        #     # has not requested)
+        #     self.slider.handler_block(self.slider_update_signal_id)
 
-            # set the position of the slider to the current pipeline position
-            # (in seconds)
-            self.slider.set_value(current / Gst.SECOND)
+        #     # set the position of the slider to the current pipeline position
+        #     # (in seconds)
+        #     self.slider.set_value(current / Gst.SECOND)
 
-            # enable the signal again
-            self.slider.handler_unblock(self.slider_update_signal_id)
+        #     # enable the signal again
+        #     self.slider.handler_unblock(self.slider_update_signal_id)
 
-        return True
+        # return True
 
     # this function is called when new metadata is discovered in the stream
     def on_tags_changed(self, playbin, stream):
@@ -427,8 +441,9 @@ class Stream():
             # not from the playbin, ignore
             return
 
-        self.state = new
-        print("State changed from {0} to {1}".format(
+        self.me['status'] = new
+        self.me['statusname'] = Gst.Element.state_get_name(new)
+        print("State changed from %s to %s" % (
             Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
 
         if old == Gst.State.READY and new == Gst.State.PAUSED:
@@ -510,9 +525,9 @@ class Stream():
     #     # Allow pipeline resources to be released
     #     pipeline.set_state(Gst.State.NULL)
     #
-    #     bus = pipeline.get_bus()
-    #     bus.remove_signal_watch()
-    #     bus.disconnect(connection_handler)
+    #     self.bus = pipeline.get_bus()
+    #     self.bus.remove_signal_watch()
+    #     self.bus.disconnect(connection_handler)
     #
     #     for element in media_elements:
     #         element.dispose()
