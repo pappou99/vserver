@@ -31,8 +31,8 @@ import os
 from threading import Thread
 
 import gi
-# gi.require_version("Gtk", "3.0")
-# from gi.repository import Gtk
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 from gi.repository import Gst
 
 import vserver.mqtt as mqtt
@@ -113,10 +113,10 @@ class Main:
         #     Settings.streams[streamnumber].start()# instantly play video for testing
 
         # ### create gui ###
-        # Settings.main_window = ui.Ui()
-        # Settings.main_window.connect("destroy", Gtk.main_quit)
-        # Settings.main_window.show_all()
-        # Gtk.main()
+        Settings.ui = ui.Ui()
+        Settings.ui.connect("destroy", Gtk.main_quit)
+        Settings.ui.show_all()
+        Gtk.main()
 
         # enable MQTT-remote support
         mqtt_client = mqtt.MqttRemote(sub_topic='#')

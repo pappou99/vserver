@@ -72,4 +72,4 @@ class Settings:
     mqtt_pass = Secrets.mqtt_pass
 
     ### Ui
-    main_window = None
+    ui_elements = [None]
