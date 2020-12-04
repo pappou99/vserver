@@ -67,13 +67,13 @@ class Stream():
 
         # instruct the bus to emit signals for each received message
         # and connect to the interesting signals
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
+        self.bus = self.pipeline.get_bus()
+        self.bus.add_signal_watch()
 
-        bus.connect("message::error", self.on_error)
-        bus.connect("message::eos", self.on_eos)
-        bus.connect("message::state-changed", self.on_state_changed)
-        bus.connect("message::application", self.on_application_message)
+        self.bus.connect("message::error", self.on_error)
+        self.bus.connect("message::eos", self.on_eos)
+        self.bus.connect("message::state-changed", self.on_state_changed)
+        self.bus.connect("message::application", self.on_application_message)
 
         inp = PossibleInputs()
         in_options = inp.Generate(video_in_name, audio_in_name, self.stream_id)
@@ -189,7 +189,11 @@ class Stream():
     def cleanup(self):
         if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
+            self.bus.remove_signal_watch()
             self.pipeline = None
+        self.me['status'] = None
+        # self.me['stream'] = None
+        # self.me['thread'] = None
 
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
@@ -429,8 +433,9 @@ class Stream():
             # not from the playbin, ignore
             return
 
-        self.state = new
-        print("State changed from {0} to {1}".format(
+        self.me['status'] = new
+        self.me['statusname'] = Gst.Element.state_get_name(new)
+        print("State changed from %s to %s" % (
             Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
 
         if old == Gst.State.READY and new == Gst.State.PAUSED:
