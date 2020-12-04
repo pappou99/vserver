@@ -44,8 +44,8 @@ from vserver.ui import ui
 timeout = 2
 
 
-class main:
-    """Class main
+class Main:
+    """Class Main
     
     Starts with default settings placed in vServer_settings.py or with interactive user input if needed.
     Additional modules loaded:
