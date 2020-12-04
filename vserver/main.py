@@ -125,6 +125,6 @@ class Main:
 
 if __name__ == '__main__':
     try:
-        main = main()
+        main = Main()
     except KeyboardInterrupt:
         Stream.exit_all
