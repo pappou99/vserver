@@ -65,6 +65,8 @@ class Main:
     def __init__(self):
         Settings.hostname = socket.gethostname()
 
+        os.system('jack_control start')
+
         if Settings.interactive:
             print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
             get_input_thread = Thread(target=self.get_input, name='interactivity')
