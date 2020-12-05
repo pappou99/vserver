@@ -32,6 +32,7 @@ class Stream():
         # initialize GStreamer
         Gst.init(sys.argv)
         GObject.threads_init()
+        self.jackaudio = Jacking()
         self.loop = GLib.MainLoop()
 
         # register a function that GLib will call every second
@@ -170,8 +171,7 @@ class Stream():
 
             self.write_dotfile(self.streamnumber, 'play')
 
-            jackaudio = Jacking()
-            jackaudio.connect(self.streamnumber, self.devicename)
+            self.jackaudio.connect(self.streamnumber, self.devicename)
 
             self.loop.run()
         finally:
