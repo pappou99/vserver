@@ -125,10 +125,6 @@ class Main:
         Settings.ui.show_all()
         Gtk.main()
 
-        # enable MQTT-remote support
-        mqtt_client = mqtt.MqttRemote(sub_topic='#')
-        mqtt_client.start()
-
 
 if __name__ == '__main__':
     try:
