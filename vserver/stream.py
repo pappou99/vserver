@@ -46,7 +46,7 @@ class Stream():
                 Gst.debug_set_default_threshold(
                     Gst.DebugLevel.ERROR)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
             Gst.debug_add_log_function(self.on_debug, None)  # TODO Bauchen wird die noch?
-            Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
+            # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
         # initialize GTK
         # Gtk.init(sys.argv)
 
@@ -426,7 +426,7 @@ class Stream():
         err, dbg = msg.parse_error()
         print("ERROR:", msg.src.get_name(), ":", err.message)
         if dbg:
-            print("Debug info:", dbg)
+            print("       Debug info:", dbg)
 
     # this function is called when an End-Of-Stream message is posted on the bus
     # we just set the pipeline to READY (which stops playback)
@@ -543,11 +543,10 @@ class Stream():
         # print('message: %s' % message)
         # print('user_data: %s' % user_data)
         if source:
-            # print('Debug {} {}: {}'.format(Gst.DebugLevel.get_name(level), source.name, message.get()))
+            print('DEBUG %s %s: %s' % (Gst.DebugLevel.get_name(level), source.name, message.get()))
             pass
         else:
-            # print('Debug {}: {}'.format(
-            # Gst.DebugLevel.get_name(level), message.get()))
+            print('DEBUG %s: %s' % (Gst.DebugLevel.get_name(level), message.get()))
             pass
 
 
