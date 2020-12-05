@@ -115,6 +115,10 @@ class Main:
         # if Settings.instant_play == True:
         #     Settings.streams[streamnumber].start()# instantly play video for testing
 
+        # enable MQTT-remote support
+        mqtt_client = mqtt.MqttRemote(sub_topic='#')
+        mqtt_client.start()
+
         # ### create gui ###
         Settings.ui = ui.Ui()
         Settings.ui.connect("destroy", Gtk.main_quit)
