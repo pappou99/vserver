@@ -185,7 +185,7 @@ class Stream():
         audio_stream = self.pipeline.get_by_name('a_enc')
         stream_muxer = self.pipeline.get_by_name('muxer')
         audio_stream.link_pads('src', stream_muxer, None)
-        time.sleep(5)
+        time.sleep(1)
 
     def stop(self):
         self.loop.quit()
