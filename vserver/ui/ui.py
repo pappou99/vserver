@@ -34,7 +34,7 @@ class Ui(threading.Thread, Gtk.Window):
         Gtk.Window.__init__(self, title="Videoserver %s" % Settings.maschinename)
         self.set_border_width(10)
 
-        self.main_box= Gtk.VBox.new(False, 0)
+        self.main_box= Gtk.VBox.new(False, 5)
         self.add(self.main_box)
 
         #add a horizontal box for all the stream controls etc.
