@@ -98,9 +98,10 @@ class Ui(threading.Thread, Gtk.Window):
         Gtk.main_quit()
     
     def start_stream_gui(self, switch, gparam, streamnumber):
-        if switch.get_active:
-            Remote.play(None, streamnumber, 1)#TODO change audio selection to dropdown
-            Settings.ui_elements[streamnumber]['button'].set_label('Stop (%s)' % streamnumber)
+        if switch.get_active():
+            audiotrack = Settings.ui_elements[streamnumber]['select_audio'].get_value_as_int()
+            Remote.play(None, streamnumber, audiotrack)#TODO change audio selection to dropdown
+            # Settings.ui_elements[streamnumber]['button'].set_label('Stop (%s)' % streamnumber)
         else:
             Remote.stop(None, streamnumber)
 
