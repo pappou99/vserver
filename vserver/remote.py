@@ -29,6 +29,7 @@ class Remote():
 
     def play(self, streamnumber, audio_no):
         me = Settings.streams[streamnumber]
+        me['active'] = True
         # Settings.streams[streamnumber]['stream'] = Player()
         if Settings.streams[streamnumber]['status'] is None:
             print('REMOTE: Preparing videostream %s with audiotrack %s' % (streamnumber, audio_no))
@@ -44,6 +45,7 @@ class Remote():
 
     def stop(self, streamnumber):
         me = Settings.streams[streamnumber]
+        me['active'] = False
         if me['stream'] != None:
             print('REMOTE: Stopping video %s\n' % streamnumber)
             me['stream'].stop()
@@ -51,3 +53,5 @@ class Remote():
             me['stream'].cleanup()
             for i in Settings.streams:
                 print(i)
+        else:
+            print('Video was already stopped. Nothing to do!')
