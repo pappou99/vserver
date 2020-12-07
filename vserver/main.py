@@ -110,7 +110,7 @@ class Main:
             me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
             status = me['status']
             # me['status'] = status = me['stream'].pipeline.get_state(5)
-            me['statusname'] = Gst.Element.state_get_name(status)
+            # me['statusname'] = Gst.Element.state_get_name(status)
 
         # if Settings.instant_play == True:
         #     Settings.streams[streamnumber].start()# instantly play video for testing
