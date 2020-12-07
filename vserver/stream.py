@@ -89,13 +89,13 @@ class Stream():
         audioinput = in_options[1]
 
         # Audio source
-        self.malm([
+        audiosource = [
             audioinput,
             ['queue', None, {}],
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
-            ['capsfilter', None, {'caps': 'audio/x-raw,channels=8,rate=48000'}],
+            ['capsfilter', None, {'caps': 'audio/x-raw,channels=%s,rate=48000' % Settings.audio_channels_from_sdi}],
             ['tee', 'audio', {}],
             ['deinterleave', 'deinterleaver', {}],
             ['queue', 'd_follower', {}],
@@ -109,20 +109,17 @@ class Stream():
             ['audiorate', None, {}],
             [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]],
             [Settings.a_enc[2], 'a_parser', Settings.a_enc[3]]
-        ])
-
+        ]
         # Jack sink
-        self.malm([
+        jacksink = [
             ['queue', 'jack', {}],
             ['audioconvert', None, {}],
             ['audioresample', None, {}],
             ['queue', None, {}],
             ['jackaudiosink', 'jacksink', {'connect': 0, 'client-name': self.devicename}]
-        ])
-        self.audio.link(getattr(self, 'jack'))
-
+        ]
         # Video input
-        self.malm([
+        videopipe = [
             videoinput,
             ['textoverlay', None,
              {'text': '%s:%s' % (Settings.hostname, self.devicename), 'valignment': 'top', 'halignment': 'left',
@@ -140,8 +137,13 @@ class Stream():
             # [Settings.payloader[0], 'payloader', Settings.payloader[1]],
             # ['udpsink', 'netsink', {'host': Settings.stream_ip, 'port' : self.port}]
             ['rtmpsink', 'netsink', {'location': '%s' % self.location}]
-        ])
+        ]
 
+        self.malm(audiosource)
+        self.malm(jacksink)
+        self.malm(videopipe)
+
+        self.audio.link(getattr(self, 'jack'))
         # self.a_parser.link(getattr(self, 'muxer'))
         self.a_parser.link(getattr(self, 'muxer'))
 
