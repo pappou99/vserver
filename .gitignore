@@ -13,12 +13,8 @@ benchmark/*
 .~lock.codecs.ods#
 codecs.ods
 video_udp.py
-bin/*
-include/*
-lib/*
-share/*
-pyve
-lib64
 vserver/Widget.py
 working_basic_tutorial_5.py
 *.pyc
+
+venv/
