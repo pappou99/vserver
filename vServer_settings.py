@@ -56,6 +56,7 @@ class Settings:
     a_enc = ['lamemp3enc', {}, 'mpegaudioparse', {}]
     num_streams = 2
     
+    audio_channels_from_sdi = 8
     audio_channels_to_madi = 1#should be 8 for real life
     audio_channels_to_stream = 1
     default_audio_to_stream = 1

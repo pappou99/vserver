@@ -23,7 +23,9 @@ import threading
 import gi
 
 gi.require_version("Gtk", "3.0")
+gi.require_version('Gst', '1.0')
 from gi.repository import Gtk
+from gi.repository import Gst
 
 from vServer_settings import Settings
 from vserver.remote import Remote
@@ -34,48 +36,78 @@ class Ui(threading.Thread, Gtk.Window):
         Gtk.Window.__init__(self, title="Videoserver %s" % Settings.maschinename)
         self.set_border_width(10)
 
-        #add a horizontal box for all the start buttons
-        self.control_hbox = Gtk.HBox.new(False, 0)
-        self.add(self.control_hbox)
+        self.main_box= Gtk.VBox.new(False, 5)
+        self.add(self.main_box)
 
-        index_box = Gtk.VBox.new(False, 0)
-        label_label = Gtk.Label(label="Videoname -->")
-        button_label = Gtk.Label(label='Control Button -->')
-        status_label = Gtk.Label(label="Status -->")
+        #add a horizontal box for all the stream controls etc.
+        self.control_hbox = Gtk.HBox.new(False, 0)
+        self.main_box.add(self.control_hbox)
+
+        # index_box = Gtk.VBox.new(False, 0)
+        # label_label = Gtk.Label(label="Videoname -->")
+        # button_label = Gtk.Label(label='Control Button -->')
+        # status_label = Gtk.Label(label="Status -->")
         
-        index_box.pack_start(label_label, False, False, 0)
-        index_box.pack_start(button_label, False, False, 0)
-        index_box.pack_start(status_label, False, False, 0)
-        self.control_hbox.pack_start(index_box, False, False, 0)
+        # index_box.pack_start(label_label, False, False, 5)
+        # index_box.pack_start(button_label, False, False, 5)
+        # index_box.pack_start(status_label, False, False, 5)
+        # self.control_hbox.pack_start(index_box, False, False, 5)
 
         #add start buttons
         for streamnumber in range(1, Settings.num_streams+1):
             Settings.ui_elements.append(dict())
-            me = Settings.ui_elements[streamnumber]
-            statusname = Settings.streams[streamnumber]['statusname']
+            gui = Settings.ui_elements[streamnumber]
+            statusname = Gst.Element.state_get_name(Settings.streams[streamnumber]['status'])
 
-            me['box'] = Gtk.VBox.new(False, 0)
-            me['label'] = Gtk.Label(label="Video %s" % streamnumber)
-            me['button'] = Gtk.Button.new_with_label("Start Stream %s" % streamnumber)
-            me['button'].connect("clicked",  self.start_stream_gui, streamnumber)
-            me['status'] = Gtk.Label(label="%s" % statusname)
+            gui['box'] = Gtk.VBox.new(False, 0)
+            gui['stream_label'] = Gtk.Label(label="Video %s" % streamnumber)
+            gui['select_audio_label'] = Gtk.Label(label='Audiospur')
             
-            me['box'].pack_start(me['label'], False, False, 0)
-            me['box'].pack_start(me['button'], False, False, 0)
-            me['box'].pack_start(me['status'], False, False, 0)
-            self.control_hbox.pack_start(me['box'], False, False, 0)
+            adjustment = Gtk.Adjustment(value = Settings.default_audio_to_stream, lower=1, upper=Settings.audio_channels_from_sdi, step_increment=1, page_increment=10)
+            gui['select_audio'] = Gtk.SpinButton()
+            gui['select_audio'].set_adjustment(adjustment)
+            # setattr(gui['select_audio'], 'stream', streamnumber)
+            # gui['select_audio'].connect('value-changed', self.on_spin_but_val_changed, streamnumber)
+
+
+            gui['switch'] = Gtk.Switch.new()
+            gui['switch'].connect('notify::active', self.start_stream_gui, streamnumber)
+            # gui['button'] = Gtk.Button.new_with_label("Start (%s)" % streamnumber)
+            # gui['button'].connect("clicked",  self.start_stream_gui, streamnumber)
+            gui['status_label'] = Gtk.Label(label="Status Stream %s:" % streamnumber)
+            gui['status'] = Gtk.Label(label="%s" % statusname)
+            gui['audio_label'] = Gtk.Label(label="Streaming audio:")
+            gui['audio_streaming'] = Gtk.Label(label="%s" % Settings.default_audio_to_stream)
+            
+            gui['box'].pack_start(gui['stream_label'], False, False, 5)
+            gui['box'].pack_start(gui['select_audio_label'], False, False, 5)
+            gui['box'].pack_start(gui['select_audio'], False, False, 5)
+            gui['box'].pack_start(gui['switch'], False, False, 5)
+            gui['box'].pack_start(gui['status_label'], False, False, 5)
+            gui['box'].pack_start(gui['status'], False, False, 5)
+            gui['box'].pack_start(gui['audio_label'], False, False, 5)
+            gui['box'].pack_start(gui['audio_streaming'], False, False, 5)
+            self.control_hbox.pack_start(gui['box'], False, False, 5)
 
 
         #add a close button TODO move to a different box
         closebutton = Gtk.Button.new_with_mnemonic("_Close")
         closebutton.connect("clicked", self.on_close_clicked)
-        self.control_hbox.pack_start(closebutton, True, True, 0)
+        self.main_box.pack_start(closebutton, True, True, 0)
 
     def on_close_clicked(self, button):
         print("Closing application")
         Gtk.main_quit()
     
-    def start_stream_gui(self, button, streamnumber):
-        Remote.play(None, streamnumber, 1)#TODO change audio selection to dropdown
+    def start_stream_gui(self, switch, gparam, streamnumber):
+        if switch.get_active():
+            audiotrack = Settings.ui_elements[streamnumber]['select_audio'].get_value_as_int()
+            Remote.play(None, streamnumber, audiotrack)#TODO change audio selection to dropdown
+            # Settings.ui_elements[streamnumber]['button'].set_label('Stop (%s)' % streamnumber)
+        else:
+            Remote.stop(None, streamnumber)
 
-        
+    # def on_spin_but_val_changed(self, spin_button, streamnumber):
+    #     value = spin_button.get_value_as_int()
+    #     print(value, streamnumber)
+    #     # Settings.streams[spin_button.stream]['audio_to_stream'] = value
