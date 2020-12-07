@@ -151,6 +151,8 @@ class Stream():
 
         self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
 
+        self.pipeline.set_state(Gst.State.READY)
+
     # set the playbin to PLAYING (start playback), register refresh callback
     # and start the GTK main loop
     def play(self):
@@ -190,19 +192,27 @@ class Stream():
         time.sleep(1)
 
     def stop(self):
-        self.loop.quit()
         self.pipeline.set_state(Gst.State.READY)
+        self.me['status'] = self.get_pipeline_status()
+        self.loop.quit()
+        self.refresh_ui()
         pass
 
     # set the playbin state to NULL and remove the reference to it
     def cleanup(self):
         if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
+            self.me['status'] = self.get_pipeline_status()
+            # time.sleep(5)
             self.bus.remove_signal_watch()
             self.pipeline = None
-        self.me['status'] = None
-        # self.me['stream'] = None
-        # self.me['thread'] = None
+            # self.me['status'] = None
+            # self.me['stream'] = None
+            self.me['thread'] = None
+
+    def get_pipeline_status(self):
+        ret = self.pipeline.get_state(5)
+        return ret[1]
 
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
@@ -386,7 +396,7 @@ class Stream():
         # we do not want to update anything unless we are in the PAUSED
         # or PLAYING states
         if self.pipe_status < Gst.State.PAUSED:
-            gui['status'].set_label('%s' % self.me['statusname'])
+            gui['status'].set_label('%s' % Gst.Element.state_get_name(self.me['status']))
             gui['audio_streaming'].set_label('%s' % self.audio_to_stream)
             return True
 
@@ -446,7 +456,6 @@ class Stream():
             return
 
         self.me['status'] = new
-        self.me['statusname'] = Gst.Element.state_get_name(new)
         print("State changed from %s to %s" % (
             Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
 

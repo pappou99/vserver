@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import gi
+
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst
 
 from vServer_settings import Settings
 from vserver.stream import Stream
@@ -31,7 +35,7 @@ class Remote():
         me = Settings.streams[streamnumber]
         me['active'] = True
         # Settings.streams[streamnumber]['stream'] = Player()
-        if Settings.streams[streamnumber]['status'] is None:
+        if Settings.streams[streamnumber]['status'] is Gst.State.NULL:
             print('REMOTE: Preparing videostream %s with audiotrack %s' % (streamnumber, audio_no))
             me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
         # elif Settings.streams[streamnumber] != 'PAUSED':# TODO: Untested

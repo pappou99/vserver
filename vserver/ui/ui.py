@@ -23,7 +23,9 @@ import threading
 import gi
 
 gi.require_version("Gtk", "3.0")
+gi.require_version('Gst', '1.0')
 from gi.repository import Gtk
+from gi.repository import Gst
 
 from vServer_settings import Settings
 from vserver.remote import Remote
@@ -55,7 +57,7 @@ class Ui(threading.Thread, Gtk.Window):
         for streamnumber in range(1, Settings.num_streams+1):
             Settings.ui_elements.append(dict())
             gui = Settings.ui_elements[streamnumber]
-            statusname = Settings.streams[streamnumber]['statusname']
+            statusname = Gst.Element.state_get_name(Settings.streams[streamnumber]['status'])
 
             gui['box'] = Gtk.VBox.new(False, 0)
             gui['stream_label'] = Gtk.Label(label="Video %s" % streamnumber)
