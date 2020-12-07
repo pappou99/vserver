@@ -59,7 +59,7 @@ class Jacking(): #threading.Thread
             capture = self.client.get_ports(name_pattern='%s' % self.clientname, is_audio=True, is_output=True, is_physical=False)
             playback = self.client.get_ports(is_physical=True, is_input=True)
             print('Jack: Playbackports: %s' % playback)
-            if Settings.homework == False:
+            if Settings.development == False:
                 # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
                 print('JACK: Removing the first two ports')
                 del playback[1]
