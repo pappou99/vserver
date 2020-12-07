@@ -105,5 +105,7 @@ class Ui(threading.Thread, Gtk.Window):
         else:
             Remote.stop(None, streamnumber)
 
-    def on_spin_but_val_changed(self, spin_button):
-        print(spin_button.get_value_as_int())
+    # def on_spin_but_val_changed(self, spin_button, streamnumber):
+    #     value = spin_button.get_value_as_int()
+    #     print(value, streamnumber)
+    #     # Settings.streams[spin_button.stream]['audio_to_stream'] = value
