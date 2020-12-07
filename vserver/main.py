@@ -32,6 +32,7 @@ from threading import Thread
 
 import gi
 gi.require_version("Gtk", "3.0")
+gi.require_version("Gst", "1.0")
 from gi.repository import Gtk
 from gi.repository import Gst
 
@@ -63,6 +64,8 @@ class Main:
 
     def __init__(self):
         Settings.hostname = socket.gethostname()
+
+        os.system('jack_control start')
 
         if Settings.interactive:
             print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
@@ -107,20 +110,20 @@ class Main:
             me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
             status = me['status']
             # me['status'] = status = me['stream'].pipeline.get_state(5)
-            me['statusname'] = Gst.Element.state_get_name(status)
+            # me['statusname'] = Gst.Element.state_get_name(status)
 
         # if Settings.instant_play == True:
         #     Settings.streams[streamnumber].start()# instantly play video for testing
+
+        # enable MQTT-remote support
+        mqtt_client = mqtt.MqttRemote(sub_topic='#')
+        mqtt_client.start()
 
         # ### create gui ###
         Settings.ui = ui.Ui()
         Settings.ui.connect("destroy", Gtk.main_quit)
         Settings.ui.show_all()
         Gtk.main()
-
-        # enable MQTT-remote support
-        mqtt_client = mqtt.MqttRemote(sub_topic='#')
-        mqtt_client.start()
 
 
 if __name__ == '__main__':

@@ -37,7 +37,7 @@ class PossibleInputs:
             }
         a_input_list = {
                 'Decklink-Card' : [
-                    ['decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : 8, 'do-timestamp' : True}]
+                    ['decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : Settings.audio_channels_from_sdi, 'do-timestamp' : True}]
               ],
                 'Test sound generator' : [
                     ['audiotestsrc', None, {'is-live' : True, 'do-timestamp' : True, 'wave': 'pink-noise', 'volume' : 0.03}] #, '!', 'audio/x-raw,channels=8'
@@ -201,7 +201,7 @@ class SelectThe:
         return v_enc
 
     def Audio(self):
-        a_enc_pip = self.codec("audioformat", self.possible_a_codecs, self.a_enc_list)
+        a_enc_pip = self.codec("Audioformat", self.possible_a_codecs, self.a_enc_list)
         # a_enc_pip.extend([{'name' : 'a_enc', "!", 'mux.'])
         # print(a_enc_pip)
         return a_enc_pip

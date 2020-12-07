@@ -32,6 +32,7 @@ class Stream():
         # initialize GStreamer
         Gst.init(sys.argv)
         GObject.threads_init()
+        self.jackaudio = Jacking()
         self.loop = GLib.MainLoop()
 
         # register a function that GLib will call every second
@@ -45,7 +46,7 @@ class Stream():
                 Gst.debug_set_default_threshold(
                     Gst.DebugLevel.ERROR)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
             Gst.debug_add_log_function(self.on_debug, None)  # TODO Bauchen wird die noch?
-            Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
+            # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
         # initialize GTK
         # Gtk.init(sys.argv)
 
@@ -88,13 +89,13 @@ class Stream():
         audioinput = in_options[1]
 
         # Audio source
-        self.malm([
+        audiosource = [
             audioinput,
             ['queue', None, {}],
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
-            ['capsfilter', None, {'caps': 'audio/x-raw,channels=8,rate=48000'}],
+            ['capsfilter', None, {'caps': 'audio/x-raw,channels=%s,rate=48000' % Settings.audio_channels_from_sdi}],
             ['tee', 'audio', {}],
             ['deinterleave', 'deinterleaver', {}],
             ['queue', 'd_follower', {}],
@@ -108,20 +109,17 @@ class Stream():
             ['audiorate', None, {}],
             [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]],
             [Settings.a_enc[2], 'a_parser', Settings.a_enc[3]]
-        ])
-
+        ]
         # Jack sink
-        self.malm([
+        jacksink = [
             ['queue', 'jack', {}],
             ['audioconvert', None, {}],
             ['audioresample', None, {}],
             ['queue', None, {}],
             ['jackaudiosink', 'jacksink', {'connect': 0, 'client-name': self.devicename}]
-        ])
-        self.audio.link(getattr(self, 'jack'))
-
+        ]
         # Video input
-        self.malm([
+        videopipe = [
             videoinput,
             ['textoverlay', None,
              {'text': '%s:%s' % (Settings.hostname, self.devicename), 'valignment': 'top', 'halignment': 'left',
@@ -139,14 +137,21 @@ class Stream():
             # [Settings.payloader[0], 'payloader', Settings.payloader[1]],
             # ['udpsink', 'netsink', {'host': Settings.stream_ip, 'port' : self.port}]
             ['rtmpsink', 'netsink', {'location': '%s' % self.location}]
-        ])
+        ]
 
+        self.malm(audiosource)
+        self.malm(jacksink)
+        self.malm(videopipe)
+
+        self.audio.link(getattr(self, 'jack'))
         # self.a_parser.link(getattr(self, 'muxer'))
         self.a_parser.link(getattr(self, 'muxer'))
 
         self.write_dotfile(self.streamnumber, 'malm')
 
         self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
+
+        self.pipeline.set_state(Gst.State.READY)
 
     # set the playbin to PLAYING (start playback), register refresh callback
     # and start the GTK main loop
@@ -170,8 +175,7 @@ class Stream():
 
             self.write_dotfile(self.streamnumber, 'play')
 
-            jackaudio = Jacking()
-            jackaudio.connect(self.streamnumber, self.devicename)
+            self.jackaudio.connect(self.streamnumber, self.devicename)
 
             self.loop.run()
         finally:
@@ -185,22 +189,30 @@ class Stream():
         audio_stream = self.pipeline.get_by_name('a_enc')
         stream_muxer = self.pipeline.get_by_name('muxer')
         audio_stream.link_pads('src', stream_muxer, None)
-        time.sleep(5)
+        time.sleep(1)
 
     def stop(self):
-        self.loop.quit()
         self.pipeline.set_state(Gst.State.READY)
+        self.me['status'] = self.get_pipeline_status()
+        self.loop.quit()
+        self.refresh_ui()
         pass
 
     # set the playbin state to NULL and remove the reference to it
     def cleanup(self):
         if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
+            self.me['status'] = self.get_pipeline_status()
+            # time.sleep(5)
             self.bus.remove_signal_watch()
             self.pipeline = None
-        self.me['status'] = None
-        # self.me['stream'] = None
-        # self.me['thread'] = None
+            # self.me['status'] = None
+            # self.me['stream'] = None
+            self.me['thread'] = None
+
+    def get_pipeline_status(self):
+        ret = self.pipeline.get_state(5)
+        return ret[1]
 
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
@@ -378,12 +390,14 @@ class Stream():
 
     # this function is called periodically to refresh the GUI
     def refresh_ui(self):
+        gui = Settings.ui_elements[self.streamnumber]
         # current = -1
 
         # we do not want to update anything unless we are in the PAUSED
         # or PLAYING states
         if self.pipe_status < Gst.State.PAUSED:
-            Settings.ui_elements[self.streamnumber]['label'].set_label()
+            gui['status'].set_label('%s' % Gst.Element.state_get_name(self.me['status']))
+            gui['audio_streaming'].set_label('%s' % self.audio_to_stream)
             return True
 
         # # if we don't know it yet, query the stream duration
@@ -425,7 +439,7 @@ class Stream():
         err, dbg = msg.parse_error()
         print("ERROR:", msg.src.get_name(), ":", err.message)
         if dbg:
-            print("Debug info:", dbg)
+            print("       Debug info:", dbg)
 
     # this function is called when an End-Of-Stream message is posted on the bus
     # we just set the pipeline to READY (which stops playback)
@@ -442,7 +456,6 @@ class Stream():
             return
 
         self.me['status'] = new
-        self.me['statusname'] = Gst.Element.state_get_name(new)
         print("State changed from %s to %s" % (
             Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
 
@@ -542,11 +555,10 @@ class Stream():
         # print('message: %s' % message)
         # print('user_data: %s' % user_data)
         if source:
-            # print('Debug {} {}: {}'.format(Gst.DebugLevel.get_name(level), source.name, message.get()))
+            print('DEBUG %s %s: %s' % (Gst.DebugLevel.get_name(level), source.name, message.get()))
             pass
         else:
-            # print('Debug {}: {}'.format(
-            # Gst.DebugLevel.get_name(level), message.get()))
+            print('DEBUG %s: %s' % (Gst.DebugLevel.get_name(level), message.get()))
             pass
 
 
