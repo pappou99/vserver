@@ -380,13 +380,14 @@ class Stream():
 
     # this function is called periodically to refresh the GUI
     def refresh_ui(self):
+        gui = Settings.ui_elements[self.streamnumber]
         # current = -1
 
         # we do not want to update anything unless we are in the PAUSED
         # or PLAYING states
         if self.pipe_status < Gst.State.PAUSED:
-            Settings.ui_elements[self.streamnumber]['status'].set_label(
-                '%s' % self.me['statusname'])
+            gui['status'].set_label('%s' % self.me['statusname'])
+            gui['audio_streaming'].set_label('%s' % self.audio_to_stream)
             return True
 
         # # if we don't know it yet, query the stream duration
