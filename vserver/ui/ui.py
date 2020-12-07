@@ -65,7 +65,7 @@ class Ui(threading.Thread, Gtk.Window):
             gui['select_audio'] = Gtk.SpinButton()
             gui['select_audio'].set_adjustment(adjustment)
             # setattr(gui['select_audio'], 'stream', streamnumber)
-            gui['select_audio'].connect('value-changed', self.on_spin_but_val_changed, streamnumber)
+            # gui['select_audio'].connect('value-changed', self.on_spin_but_val_changed, streamnumber)
 
 
             gui['switch'] = Gtk.Switch.new()
