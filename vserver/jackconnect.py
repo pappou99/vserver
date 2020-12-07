@@ -51,7 +51,7 @@ class Jacking(): #threading.Thread
         print('===================JACKING====================')
         self.video_id = videonumber -1
         self.clientname = clientname
-        self.client = jack.Client(self.clientname, servername=None)
+        self.client = jack.Client('control_%s' % self.clientname, servername=None)
 
         self.checks()
 
