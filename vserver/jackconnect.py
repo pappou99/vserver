@@ -81,7 +81,7 @@ class Jacking(): #threading.Thread
     def checks(self):
         if self.client.status.server_started:
             print("JACK: JACK server started")
-        else:
-            print('JACK: JACK server was already running')
+        # else:
+        #     print('JACK: JACK server was already running')
         if self.client.status.name_not_unique:
             print("JACK: unique name %s assigned" % (self.client.name))

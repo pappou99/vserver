@@ -225,49 +225,6 @@ class Stream():
                         videonumber, Settings.v_enc[0], Settings.a_enc[0]), 'w') as dot_file:
                     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
-    def build_ui(self):
-        main_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
-        main_window.connect("delete-event", self.on_delete_event)
-
-        video_window = Gtk.DrawingArea.new()
-        video_window.set_double_buffered(False)
-        video_window.connect("realize", self.on_realize)
-        video_window.connect("draw", self.on_draw)
-
-        play_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_PLAY)
-        play_button.connect("clicked", self.on_play)
-
-        pause_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_PAUSE)
-        pause_button.connect("clicked", self.on_pause)
-
-        stop_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_STOP)
-        stop_button.connect("clicked", self.on_stop)
-
-        self.slider = Gtk.HScale.new_with_range(0, 100, 1)
-        self.slider.set_draw_value(False)
-        self.slider_update_signal_id = self.slider.connect(
-            "value-changed", self.on_slider_changed)
-
-        self.streams_list = Gtk.TextView.new()
-        self.streams_list.set_editable(False)
-
-        controls = Gtk.HBox.new(False, 0)
-        controls.pack_start(play_button, False, False, 2)
-        controls.pack_start(pause_button, False, False, 2)
-        controls.pack_start(stop_button, False, False, 2)
-        controls.pack_start(self.slider, True, True, 0)
-
-        main_hbox = Gtk.HBox.new(False, 0)
-        main_hbox.pack_start(video_window, True, True, 0)
-        main_hbox.pack_start(self.streams_list, False, False, 2)
-
-        main_box = Gtk.VBox.new(False, 0)
-        main_box.pack_start(main_hbox, True, True, 0)
-        main_box.pack_start(controls, False, False, 0)
-
-        main_window.add(main_box)
-        main_window.set_default_size(640, 480)
-        main_window.show_all()
 
     def malm(self, to_add):
 
@@ -399,31 +356,6 @@ class Stream():
             gui['status'].set_label('%s' % Gst.Element.state_get_name(self.me['status']))
             gui['audio_streaming'].set_label('%s' % self.audio_to_stream)
             return True
-
-        # # if we don't know it yet, query the stream duration
-        # if self.duration == Gst.CLOCK_TIME_NONE:
-        #     ret, self.duration = self.pipeline.query_duration(Gst.Format.TIME)
-        #     if not ret:
-        #         print("ERROR: Could not query current duration")
-        #     else:
-        #         # set the range of the slider to the clip duration (in seconds)
-        #         self.slider.set_range(0, self.duration / Gst.SECOND)
-
-        # ret, current = self.pipeline.query_position(Gst.Format.TIME)
-        # if ret:
-        #     # block the "value-changed" signal, so the on_slider_changed
-        #     # callback is not called (which would trigger a seek the user
-        #     # has not requested)
-        #     self.slider.handler_block(self.slider_update_signal_id)
-
-        #     # set the position of the slider to the current pipeline position
-        #     # (in seconds)
-        #     self.slider.set_value(current / Gst.SECOND)
-
-        #     # enable the signal again
-        #     self.slider.handler_unblock(self.slider_update_signal_id)
-
-        # return True
 
     # this function is called when new metadata is discovered in the stream
     def on_tags_changed(self, playbin, stream):
