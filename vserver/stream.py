@@ -23,7 +23,6 @@ from vserver.jackconnect import Jacking
 # http://docs.gstreamer.com/display/GstSDK/Basic+tutorial+5%3A+GUI+toolkit+integration
 
 
-
 class Stream():
     killswitch = False
 
@@ -224,7 +223,6 @@ class Stream():
                 with open('%s/Dot_Video%d_after_play_%s_%s.dot' % (
                         Settings.dotfile_location, videonumber, Settings.v_enc[0], Settings.a_enc[0]), 'w') as dot_file:
                     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-
 
     def malm(self, to_add):
 

@@ -32,6 +32,7 @@ from threading import Thread
 import time
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gst", "1.0")
 from gi.repository import Gtk
@@ -63,7 +64,6 @@ class Main:
     Additional modules loaded:
     Benchmark: Uses nmon to create a benchmark log
     MQTT: Enables MQTT supprt for remoting via mqtt
-    TODO Ui: Not working yet
     """
     _interactive_user_choice = None
 
