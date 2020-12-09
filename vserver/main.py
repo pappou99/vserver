@@ -29,6 +29,7 @@ import sys
 import socket
 import os
 from threading import Thread
+import time
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -44,6 +45,15 @@ from vserver.benchmark import Benchmark
 from vserver.ui import ui
 
 timeout = 2
+
+
+def make_directories(directory_list):
+    for directory in directory_list:
+        print('Checking if folder exists: %s' % directory)
+        if not os.path.exists(directory):
+            print('Make folder: %s' % directory)
+            os.makedirs(directory)
+    return
 
 
 class Main:
@@ -64,6 +74,18 @@ class Main:
 
     def __init__(self):
         Settings.hostname = socket.gethostname()
+        folders_to_check = [Settings.logfile_location, Settings.dotfile_location]
+
+        if Settings.logfile == '':
+            Settings.logfile = '%s/%s.log' % (Settings.logfile_location, time.strftime('%Y%m%d %H%M%S'))
+        print('DEBUG: Log file will be written to: %s' % Settings.logfile)
+
+        if Settings.debug: folders_to_check.append(Settings.benchmark_location)
+
+        make_directories(folders_to_check)
+
+        # create Benchmark-test-files via nmon
+        if Settings.debug: Benchmark()
 
         os.system('jack_control start')
 
@@ -98,9 +120,6 @@ class Main:
         # print("Video : %s" % Settings.video_in_name)
         # self.a_in = my_inputs[1]
         # print("Audio: %s" % Settings.audio_in_name)
-
-        # create Benchmark-test-files via nmon
-        Benchmark()
 
         # create streams
         print("Creating streams\n")
