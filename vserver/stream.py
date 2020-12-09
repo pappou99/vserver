@@ -44,9 +44,7 @@ class Stream():
             # print("Debug-Level: %s" % level)
             if level < Gst.DebugLevel.ERROR:
                 Gst.debug_set_default_threshold(
-                    Gst.DebugLevel.ERROR)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
-            Gst.debug_add_log_function(self.on_debug, None)  # TODO Bauchen wird die noch?
-            # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
+                    Gst.DebugLevel.FIXME)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
         # initialize GTK
         # Gtk.init(sys.argv)
 
@@ -65,6 +63,8 @@ class Stream():
         if not self.pipeline:
             print("ERROR: Could not create playbin.")
             sys.exit(1)
+        Gst.debug_add_log_function(self.on_debug, self.pipeline)  # Callback for detailed logging
+        # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
 
         # # set up URI
         # self.malm([
@@ -217,12 +217,12 @@ class Stream():
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
             print('DEBUG: Writing dot file for debug information after %s status of pipeline' % status)
-            with open('dot/Dot_Video%d_after_%s.dot' % (videonumber, status), 'w') as dot_file:
+            with open('%s/Dot_Video%d_after_%s.dot' % (Settings.dotfile_location, videonumber, status), 'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
         else:
             if videonumber == 1:
-                with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (
-                        videonumber, Settings.v_enc[0], Settings.a_enc[0]), 'w') as dot_file:
+                with open('%s/Dot_Video%d_after_play_%s_%s.dot' % (
+                        Settings.dotfile_location, videonumber, Settings.v_enc[0], Settings.a_enc[0]), 'w') as dot_file:
                     dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
 
 
@@ -487,12 +487,17 @@ class Stream():
         # print('message: %s' % message)
         # print('user_data: %s' % user_data)
         if source:
-            print('DEBUG %s %s: %s' % (Gst.DebugLevel.get_name(level), source.name, message.get()))
+            if 'Gst.Pad' in str(source):
+                sourcename = 'Pad of %s' % source.get_parent().name
+            else:
+                sourcename = source.name
+            string = '%s\t%s\t%s\t%s\n' % (self.devicename, Gst.DebugLevel.get_name(level), sourcename, message.get())
             pass
         else:
-            print('DEBUG %s: %s' % (Gst.DebugLevel.get_name(level), message.get()))
+            string = '%s\t\t%s\t%s\n' % (self.devicename, Gst.DebugLevel.get_name(level), message.get())
             pass
-
+        logfile = open(Settings.logfile, 'a')
+        n = logfile.write(string)
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)

@@ -23,7 +23,12 @@ from vServer_secrets import Secrets
 
 class Settings:
     debug = True
-    development = True #change to true, if you dont have the required hardware (audio- videotestsrc)
+    logfile_location = './logs'  # directory without following slash
+    logfile = ''  # if this is empty a name will be generated (format YYYYMMDD HHMM.log)
+    # Advanced logging like benchmark, dot-file etc...
+    benchmark_location = '%s/benchmark' % logfile_location
+    dotfile_location = '%s/dot' % logfile_location
+    development = True  # change to true, if you dont have the required hardware (audio- videotestsrc)
     instant_play = False
     interactive = False
 
