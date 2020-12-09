@@ -55,10 +55,10 @@ class Settings:
     muxer = ['flvmux', {'streamable': True}]
     # payloader = ['rtpmp2tpay', {}]
     payloader = None
-    # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
-    v_enc = ['x264enc', {}, 'h264parse', {}]
+    # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}, 'rtpmp4apay', {}]
+    v_enc = ['x264enc', {}, 'h264parse', {}, 'rtph264pay', {}]
 
-    # a_enc = ['opusenc', {}, 'opusparse', {}]
+    a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
     # a_enc = ['lamemp3enc', {}, 'mpegaudioparse', {}]
     num_streams = 2
 
