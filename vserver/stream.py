@@ -50,8 +50,11 @@ class Stream():
 
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
-        self.devicename = 'video_%s' % self.streamnumber
-        self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber)
+        self.devicename = 'Video %s' % self.streamnumber
+        self.port = Settings.startport + self.stream_id
+        self.v_port = Settings.startport + self.stream_id * 8
+        self.a_port = self.v_port + 2
+        self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber) # RTP Setting
         self.audio_to_stream = 1
         self.audio_counter = 0
         self.me = Settings.streams[streamnumber]
