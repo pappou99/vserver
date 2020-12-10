@@ -90,6 +90,8 @@ class Stream():
         in_options = inp.Generate(video_in_name, audio_in_name, self.stream_id)
         videoinput = in_options[0]
         audioinput = in_options[1]
+        v_enc = Settings.v_enc
+        a_enc = Settings.a_enc
 
         # Audio source
         audiosource = [
@@ -110,8 +112,10 @@ class Stream():
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
-            [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]],
-            [Settings.a_enc[2], 'a_parser', Settings.a_enc[3]]
+            [a_enc[0], 'a_enc', a_enc[1]],
+            # [a_enc[2], 'a_parser', a_enc[3]],#SETTINGS FOR RTP
+            [a_enc[4], 'a_payloader', a_enc[5]],  # SETTINGS FOR RTP
+            # ['udpsink', 'a_netsink', {'host': Settings.stream_ip, 'port': self.port}]  # SETTINGS FOR RTP
         ]
         # Jack sink
         jacksink = [
@@ -122,6 +126,7 @@ class Stream():
             ['jackaudiosink', 'jacksink', {'connect': 0, 'client-name': self.devicename}]
         ]
         # Video input
+
         videopipe = [
             videoinput,
             ['textoverlay', None,
@@ -134,27 +139,79 @@ class Stream():
             ['videoscale', None, {}],
             ['capsfilter', None,
              {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
-            [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
-            # [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
-            [Settings.muxer[0], 'muxer', Settings.muxer[1]],
-            # [Settings.payloader[0], 'payloader', Settings.payloader[1]],
-            # ['udpsink', 'netsink', {'host': Settings.stream_ip, 'port' : self.port}]
-            ['rtmpsink', 'netsink', {'location': '%s' % self.location}]
+            [v_enc[0], 'v_enc', v_enc[1]],
+            # [v_enc[2], 'v_parser', v_enc[3] ],#SETTINGS FOR RTP
+            # [Settings.muxer[0], 'muxer', Settings.muxer[1]],#SETTINGS FOR RTMP
+            [v_enc[4], 'v_payloader', v_enc[5]],  # SETTINGS FOR RTP
+            # ['udpsink', 'v_netsink', {'host': Settings.stream_ip, 'port': self.port}]  # SETTINGS FOR RTP
+            # ['rtmpsink', 'netsink', {'location': '%s' % self.location}]#SETTINGS FOR RTMP
+        ]
+
+        rtpbin = [
+            ['rtpbin', 'rtpbin', {}]
+        ]
+
+        a_netsink = [
+            ['udpsink', 'a_netsink', {'host': Settings.stream_ip, 'port': self.a_port}]  # SETTINGS FOR RTP
+        ]
+
+        v_netsink = [
+            ['udpsink', 'v_netsink', {'host': Settings.stream_ip, 'port': self.v_port}]  # SETTINGS FOR RTP
         ]
 
         self.malm(audiosource)
         self.malm(jacksink)
         self.malm(videopipe)
+        self.malm(rtpbin)
+        self.malm(v_netsink)
+        self.malm(a_netsink)
 
         self.audio.link(getattr(self, 'jack'))
+
+        self.create_and_link_gstbin_sink_pads(self.v_payloader, self.rtpbin)
+        self.create_and_link_gstbin_sink_pads(self.a_payloader, self.rtpbin)
+        # self.rtpbin.connect('pad-added', self.test)
+        # self.create_and_link_gstbin_source_pads(self.rtpbin, self.v_netsink)
+        # self.create_and_link_gstbin_source_pads(self.rtpbin, self.a_netsink)
+
+        # self.v_payloader.link(getattr(self, 'rtpbin'))
+        # # self.rtpbin.connect('pad-added', self.on_new_rtpbin_pad)
+        # self.a_payloader.link(getattr(self, 'rtpbin'))
+        self.rtpbin.link(getattr(self, 'v_netsink'))
+        self.rtpbin.link(getattr(self, 'a_netsink'))
+
+
+
         # self.a_parser.link(getattr(self, 'muxer'))
-        self.a_parser.link(getattr(self, 'muxer'))
+        # self.a_parser.link(getattr(self, 'muxer'))
 
         self.write_dotfile(self.streamnumber, 'malm')
 
         self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
 
         self.pipeline.set_state(Gst.State.READY)
+
+    def create_and_link_gstbin_sink_pads(self, source, sink):
+        # todo move into method
+        source_pad = source.get_static_pad('src')
+        sink_pad_template = sink.get_pad_template('send_rtp_sink_%u')
+        sink_pad = sink.request_pad(sink_pad_template, None, None)
+        print('f1 %s' % source_pad, sink_pad)
+        source_pad.link(sink_pad)
+        return
+    # def create_and_link_gstbin_source_pads(self, source, sink):
+    #     # todo wie zuvor, nur gedreht
+    #     source_templates = source.get_pad_template_list()
+    #     print(source_templates)
+    #     for template in source_templates:
+    #         print (template.name)
+    #     source_pad_template = source.get_pad_template('send_rtp_src_%u')
+    #     print('Sourcetpl: %s' % source_pad_template)
+    #     source_pad = source.new_from_template (source_pad_template, None)
+    #     sink_pad = sink.get_static_pad('src')
+    #     print('f2 %s' % source_pad, sink_pad)
+    #     source_pad.link(sink_pad)
+    #     return
 
     # set the playbin to PLAYING (start playback), register refresh callback
     # and start the GTK main loop
@@ -190,8 +247,8 @@ class Stream():
         follower = self.pipeline.get_by_name('d_follower')
         deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
         audio_stream = self.pipeline.get_by_name('a_enc')
-        stream_muxer = self.pipeline.get_by_name('muxer')
-        audio_stream.link_pads('src', stream_muxer, None)
+        # stream_muxer = self.pipeline.get_by_name('muxer')
+        # audio_stream.link_pads('src', stream_muxer, None)
         time.sleep(1)
 
     def stop(self):
@@ -284,6 +341,32 @@ class Stream():
             prev_gst_name = element.get_name()
 
         #### CALLBACK-FUNCTIONS ####
+
+    # def on_new_rtpbin_pad(self, element, pad):
+    #     print(pad)
+    #     print(pad.name)
+    #     v_payloader = self.pipeline.get_by_name('v_payloader')
+    #     v_pay_pad = v_payloader.get_static_pad('src')
+    #     print('v: %s' % v_pay_pad)
+    #     a_payloader = self.pipeline.get_by_name('a_payloader')
+    #     a_pay_pad = a_payloader.get_static_pad('src')
+    #     print('a: %s' % a_pay_pad)
+    #     me = pad.get_parent()
+    #     me_template = me.get_pad_template_list()
+    #     for template in me_template:
+    #         print(template.name)
+    #
+    #     print(me_template)
+    #     v_pad = Gst.Pad.new_from_template('send_rtp_sink_%u', 'v_pad')
+    #     print (v_pad)
+    #     me_sinkpads = me.get_request_pad('send_rtp_sink_%u')
+    #     print('rtpbin %s' % me_sinkpads)
+    #     v_netsink = self.pipeline.get_by_name('v_netsink')
+    #     return
+
+    def test(self, *args):
+        print('-------------------------- %s' % args)
+        return
 
     def on_new_deinterleave_pad(self, element, pad):
         self.audio_counter += 1

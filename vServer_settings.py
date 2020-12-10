@@ -36,9 +36,9 @@ class Settings:
     maschinename = 'videoserver1'
     hostname = ''  # will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
 
-    # stream_ip = '239.230.225.255'# multicast Address
-    stream_ip = '10.82.109.41'  # rtmp server address
-    if development == True: stream_ip = '10.19.77.42'  # rtmp server address
+    stream_ip = '239.230.225.255'# multicast Address
+    # stream_ip = '10.82.109.41'  # rtmp server address
+    # if development == True: stream_ip = '10.19.77.42'  # rtmp server address
     startport = 5000
     speed_preset = 3
     amplification = 4
