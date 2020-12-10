@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import re
 from threading import Thread
 
 import gi
@@ -216,13 +217,21 @@ class Stream():
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
             print('DEBUG: Writing dot file for debug information after %s status of pipeline' % status)
-            with open('%s/Dot_Video%d_after_%s.dot' % (Settings.dotfile_location, videonumber, status), 'w') as dot_file:
-                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+            filename = '%s/Dot_Video%d_after_%s.dot' % (Settings.dotfile_location, videonumber, status)
         else:
             if videonumber == 1:
-                with open('%s/Dot_Video%d_after_play_%s_%s.dot' % (
-                        Settings.dotfile_location, videonumber, Settings.v_enc[0], Settings.a_enc[0]), 'w') as dot_file:
-                    dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+                filename = '%s/Dot_Video%d_after_play_%s_%s.dot' % (
+                        Settings.dotfile_location, videonumber, Settings.v_enc[0], Settings.a_enc[0])
+        if Settings.debug or videonumber == 1:
+            with open(filename, 'w') as dot_file:
+                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+            # find and replace invalid characters, wich are written with the rtpbin element
+            with open(filename, 'r') as file:
+                filedata = file.read()
+            new_filedata = re.sub('\\\\\\\\', '', filedata)
+            new_filedata = new_filedata.replace('\\\\\\"', '\"')
+            with open('%s' % filename, 'w') as file:
+                file.write(new_filedata)
 
     def malm(self, to_add):
 
