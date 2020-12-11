@@ -18,3 +18,5 @@ working_basic_tutorial_5.py
 *.pyc
 
 venv/
+
+logs/
