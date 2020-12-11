@@ -377,37 +377,21 @@ class Stream():
 
     def on_new_deinterleave_pad(self, element, pad):
         self.audio_counter += 1
-        # self.deinterleave_pads[self.audio_counter] = pad
         if self.audio_counter == self.audio_to_stream:
             print("STREAM: Connecting audio channel %s to stream number %s" % (self.audio_to_stream, self.streamnumber))
-            # print("# New pad added #")
             deint = pad.get_parent()
-            # print("deint: %s" % deint)
             pipeline = deint.get_parent()
-            # print('pipe: %s' % pipeline)
-            # print(self.current_element)
             follower = pipeline.get_by_name('d_follower')
-            follower_pads = follower.get_pad_template_list()
-            # print('Pads: %s' % follower_pads)
-
-            # print("follower: %s" % follower)
             dest_pad = follower.get_static_pad('sink')
-            # print(dest_pad)
-            # print('Linkable? %s' % pad.can_link(dest_pad))
-            # print("dest pad: %s" % dest_pad)
-            # link_status = deint.link(follower)
             link_status = pad.link_maybe_ghosting(dest_pad)
-            if link_status == False:
+            if not link_status:
                 print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
             else:
-                # print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
                 ret = self.pipeline.set_state(Gst.State.PLAYING)
                 if ret == Gst.StateChangeReturn.FAILURE:
                     print("ERROR: Unable to set the pipeline to the playing state")
                     sys.exit(1)
             self.pipeline.set_state(Gst.State.PLAYING)
-        # deinterleave = pad.get_parent()
-        # pipeline = deinterleave.get_parent()
 
     def on_new_jackaudiosink_pad(self, element, pad):
         print('===============================================================')
