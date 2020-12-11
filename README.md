@@ -1,6 +1,6 @@
 # vServer
 
-A modular python script wich starts a video deembedder and rtp videostreamer.
+A modular python script wich captures from a decklink card, starts a video deembedder and is starting a rtp videostreamer.
 It can be remote controlled by mqtt commands.
 
 For testing and codec selection the script can be used with a interactive user dialog and CPU-, Memory- and Networkusage are logged.
@@ -14,3 +14,4 @@ For testing and codec selection the script can be used with a interactive user d
 * a bunch of video- and audiocodecs
 * paho mqtt client for remote
 * nmon for logging
+* see requirements.txt

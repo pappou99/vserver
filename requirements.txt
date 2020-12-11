@@ -1,5 +1,25 @@
-python3 -m venv ZielOrdner
-source ZielOrdner/bin/activate
-pip3 install JACK-Client
-pip3 install pycairo
-pip3 install PyGObject
+astroid==2.4.2
+attrs==20.3.0
+cffi==1.14.4
+importlib-metadata==3.1.1
+iniconfig==1.1.1
+isort==5.6.4
+JACK-Client==0.5.3
+lazy-object-proxy==1.4.3
+mccabe==0.6.1
+packaging==20.7
+paho-mqtt==1.5.1
+pkg-resources==0.0.0
+pluggy==0.13.1
+py==1.9.0
+pycairo==1.20.0
+pycparser==2.20
+PyGObject==3.38.0
+pylint==2.6.0
+pyparsing==2.4.7
+pytest==6.1.2
+six==1.15.0
+toml==0.10.2
+typed-ast==1.4.1
+wrapt==1.12.1
+zipp==3.4.0
