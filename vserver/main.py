@@ -74,7 +74,7 @@ class Main:
 
     def __init__(self):
         Settings.hostname = socket.gethostname()
-        folders_to_check = [Settings.logfile_location, Settings.dotfile_location]
+        folders_to_check = [Settings.logfile_location, Settings.dotfile_location, Settings.sdp_file_location]
 
         if Settings.logfile == '':
             Settings.logfile = '%s/%s.log' % (Settings.logfile_location, time.strftime('%Y%m%d %H%M%S'))

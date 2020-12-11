@@ -5,6 +5,8 @@ import sys
 import time
 import re
 from threading import Thread
+from collections import defaultdict
+import random
 
 import gi
 
@@ -58,10 +60,11 @@ class Stream():
         self.audio_to_stream = 1
         self.audio_counter = 0
         self.me = Settings.streams[streamnumber]
-
         self.pipe_status = self.me['status'] = Gst.State.NULL
         self._elements = []
         self.duration = Gst.CLOCK_TIME_NONE
+        self.sdp_params = []
+
         self.pipeline = Gst.Pipeline()
         if not self.pipeline:
             print("ERROR: Could not create playbin.")
@@ -188,6 +191,7 @@ class Stream():
         self.write_dotfile(self.streamnumber, 'malm')
 
         self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
+        self.sdp = Thread(target=self.createsdp, args=[self.sdp_params], name='SDP-generator')
 
         self.pipeline.set_state(Gst.State.READY)
 
@@ -236,6 +240,9 @@ class Stream():
             self.write_dotfile(self.streamnumber, 'play')
 
             self.jackaudio.connect(self.streamnumber, self.devicename)
+
+            self.sdp.start()
+
 
             self.loop.run()
         finally:
@@ -591,6 +598,76 @@ class Stream():
             pass
         logfile = open(Settings.logfile, 'a')
         n = logfile.write(string)
+
+    def note_caps(self, pad):
+        sdp_params = defaultdict(str)
+        caps = pad.query_caps(None)
+        print('Caps: %s' % caps)
+        if caps:
+            # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps))
+            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))', str(caps))
+
+            # if 'media=(string)audio' in parameters[0]:
+            #     prefix = 'audio_'
+            # elif 'media=(string)video' in parameters[0]:
+            #     prefix = 'video_'
+            # else:
+            for (_, param, value, value2, value3, value4) in parameters:
+                print(param, value, value2, value3, value4)
+                sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
+            if 'audio' in sdp_params.values():
+                print('audio')
+                sdp_params['port'] = self.a_port
+            elif 'video' in sdp_params.values():
+                print('video')
+                sdp_params['port'] = self.v_port
+            return sdp_params
+
+    def createsdp(self, sdp_list):
+        v_netsink = self.pipeline.get_by_name('v_payloader')
+        a_netsink = self.pipeline.get_by_name('a_payloader')
+        for pad in v_netsink.pads:
+            if pad.direction == Gst.PadDirection.SRC:
+                self.sdp_params.append(self.note_caps(pad))
+        for pad in a_netsink.pads:
+            if pad.direction == Gst.PadDirection.SRC:
+                self.sdp_params.append(self.note_caps(pad))
+
+        # print('\n##########\nSourcepad in element payloader created\n##########\n')
+        params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
+        sdp = []
+        # if not self.sdp_generated:
+        sdp.append('v=0')
+        sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, Settings.stream_ip))
+        sdp.append('t=0 0')
+        sdp.append('s=GST2SDP')
+
+        # streamnumber = 2
+
+        # add individual streams to SDP
+        for ding in sdp_list:
+            # print('Stream: %s' % stream)
+            sdp.append("m=%s %s RTP/AVP %s" % (ding['media'], ding['port'], ding['payload']))
+            sdp.append('c=IN IP4 %s' % Settings.stream_ip)
+            sdp.append("a=rtpmap:%s %s/%s" % (ding['payload'], ding['encoding-name'], ding['clock-rate']))
+            fmtp = ["a=fmtp:%s" % ding['payload']]
+            for param, value in ding.items():
+                # is parameter an action?
+                if param[0] == 'a' and param[1] == '-':
+                    aparam = "%s:%s" % (param.replace('a-', 'a='), value)
+                    sdp.append(aparam)
+                else:
+                    if param not in params2ignore:
+                        fmtp.append(" %s=%s;" % (param, value))
+            fmtp = ''.join(fmtp)
+            sdp.append(fmtp)
+            sdp.append("a=control:track%d" % 1)
+            print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
+        sdp_str = ('\r\n'.join(sdp))
+        # save sdp
+        with open('%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber), 'w') as sdp_file:
+            sdp_file.write('\r\n'.join(sdp))
+        print('SDP-file written to %s' % str(sdp_file))
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)
