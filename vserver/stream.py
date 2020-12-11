@@ -3,7 +3,10 @@
 import os
 import sys
 import time
+import re
 from threading import Thread
+from collections import defaultdict
+import random
 
 import gi
 
@@ -21,7 +24,6 @@ from vserver.jackconnect import Jacking
 
 
 # http://docs.gstreamer.com/display/GstSDK/Basic+tutorial+5%3A+GUI+toolkit+integration
-
 
 
 class Stream():
@@ -44,27 +46,31 @@ class Stream():
             # print("Debug-Level: %s" % level)
             if level < Gst.DebugLevel.ERROR:
                 Gst.debug_set_default_threshold(
-                    Gst.DebugLevel.ERROR)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
-            Gst.debug_add_log_function(self.on_debug, None)  # TODO Bauchen wird die noch?
-            # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
+                    Gst.DebugLevel.FIXME)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
         # initialize GTK
         # Gtk.init(sys.argv)
 
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
-        self.devicename = 'video_%s' % self.streamnumber
-        self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber)
+        self.devicename = 'Video %s' % self.streamnumber
+        self.port = Settings.startport + self.stream_id
+        self.v_port = Settings.startport + self.stream_id * 8
+        self.a_port = self.v_port + 2
+        self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber) # RTP Setting
         self.audio_to_stream = 1
         self.audio_counter = 0
         self.me = Settings.streams[streamnumber]
-
         self.pipe_status = self.me['status'] = Gst.State.NULL
         self._elements = []
         self.duration = Gst.CLOCK_TIME_NONE
+        self.sdp_params = []
+
         self.pipeline = Gst.Pipeline()
         if not self.pipeline:
             print("ERROR: Could not create playbin.")
             sys.exit(1)
+        Gst.debug_add_log_function(self.on_debug, self.pipeline)  # Callback for detailed logging
+        # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
 
         # # set up URI
         # self.malm([
@@ -87,6 +93,8 @@ class Stream():
         in_options = inp.Generate(video_in_name, audio_in_name, self.stream_id)
         videoinput = in_options[0]
         audioinput = in_options[1]
+        v_enc = Settings.v_enc
+        a_enc = Settings.a_enc
 
         # Audio source
         audiosource = [
@@ -107,8 +115,10 @@ class Stream():
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
-            [Settings.a_enc[0], 'a_enc', Settings.a_enc[1]],
-            [Settings.a_enc[2], 'a_parser', Settings.a_enc[3]]
+            [a_enc[0], 'a_enc', a_enc[1]],
+            # [a_enc[2], 'a_parser', a_enc[3]],#SETTINGS FOR RTP
+            [a_enc[4], 'a_payloader', a_enc[5]],  # SETTINGS FOR RTP
+            # ['udpsink', 'a_netsink', {'host': Settings.stream_ip, 'port': self.port}]  # SETTINGS FOR RTP
         ]
         # Jack sink
         jacksink = [
@@ -119,6 +129,7 @@ class Stream():
             ['jackaudiosink', 'jacksink', {'connect': 0, 'client-name': self.devicename}]
         ]
         # Video input
+
         videopipe = [
             videoinput,
             ['textoverlay', None,
@@ -131,27 +142,80 @@ class Stream():
             ['videoscale', None, {}],
             ['capsfilter', None,
              {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
-            [Settings.v_enc[0], 'v_enc', Settings.v_enc[1]],
-            # [Settings.v_enc[2], 'v_parser', Settings.v_enc[3] ],
-            [Settings.muxer[0], 'muxer', Settings.muxer[1]],
-            # [Settings.payloader[0], 'payloader', Settings.payloader[1]],
-            # ['udpsink', 'netsink', {'host': Settings.stream_ip, 'port' : self.port}]
-            ['rtmpsink', 'netsink', {'location': '%s' % self.location}]
+            [v_enc[0], 'v_enc', v_enc[1]],
+            # [v_enc[2], 'v_parser', v_enc[3] ],#SETTINGS FOR RTP
+            # [Settings.muxer[0], 'muxer', Settings.muxer[1]],#SETTINGS FOR RTMP
+            [v_enc[4], 'v_payloader', v_enc[5]],  # SETTINGS FOR RTP
+            # ['udpsink', 'v_netsink', {'host': Settings.stream_ip, 'port': self.port}]  # SETTINGS FOR RTP
+            # ['rtmpsink', 'netsink', {'location': '%s' % self.location}]#SETTINGS FOR RTMP
+        ]
+
+        rtpbin = [
+            ['rtpbin', 'rtpbin', {}]
+        ]
+
+        a_netsink = [
+            ['udpsink', 'a_netsink', {'host': Settings.stream_ip, 'port': self.a_port}]  # SETTINGS FOR RTP
+        ]
+
+        v_netsink = [
+            ['udpsink', 'v_netsink', {'host': Settings.stream_ip, 'port': self.v_port}]  # SETTINGS FOR RTP
         ]
 
         self.malm(audiosource)
         self.malm(jacksink)
         self.malm(videopipe)
+        self.malm(rtpbin)
+        self.malm(v_netsink)
+        self.malm(a_netsink)
 
         self.audio.link(getattr(self, 'jack'))
+
+        self.create_and_link_gstbin_sink_pads(self.v_payloader, self.rtpbin)
+        self.create_and_link_gstbin_sink_pads(self.a_payloader, self.rtpbin)
+        # self.rtpbin.connect('pad-added', self.test)
+        # self.create_and_link_gstbin_source_pads(self.rtpbin, self.v_netsink)
+        # self.create_and_link_gstbin_source_pads(self.rtpbin, self.a_netsink)
+
+        # self.v_payloader.link(getattr(self, 'rtpbin'))
+        # # self.rtpbin.connect('pad-added', self.on_new_rtpbin_pad)
+        # self.a_payloader.link(getattr(self, 'rtpbin'))
+        self.rtpbin.link(getattr(self, 'v_netsink'))
+        self.rtpbin.link(getattr(self, 'a_netsink'))
+
+
+
         # self.a_parser.link(getattr(self, 'muxer'))
-        self.a_parser.link(getattr(self, 'muxer'))
+        # self.a_parser.link(getattr(self, 'muxer'))
 
         self.write_dotfile(self.streamnumber, 'malm')
 
         self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
+        self.sdp = Thread(target=self.createsdp, args=[self.sdp_params], name='SDP-generator')
 
         self.pipeline.set_state(Gst.State.READY)
+
+    def create_and_link_gstbin_sink_pads(self, source, sink):
+        # todo move into method
+        source_pad = source.get_static_pad('src')
+        sink_pad_template = sink.get_pad_template('send_rtp_sink_%u')
+        sink_pad = sink.request_pad(sink_pad_template, None, None)
+        print('f1 %s' % source_pad, sink_pad)
+        source_pad.link(sink_pad)
+        return
+    # def create_and_link_gstbin_source_pads(self, source, sink):
+    #     # todo wie zuvor, nur gedreht
+    #     source_templates = source.get_pad_template_list()
+    #     print(source_templates)
+    #     for template in source_templates:
+    #         print (template.name)
+    #     source_pad_template = source.get_pad_template('send_rtp_src_%u')
+    #     print('Sourcetpl: %s' % source_pad_template)
+    #     source_pad = source.new_from_template (source_pad_template, None)
+    #     sink_pad = sink.get_static_pad('src')
+    #     print('f2 %s' % source_pad, sink_pad)
+    #     source_pad.link(sink_pad)
+    #     return
 
     # set the playbin to PLAYING (start playback), register refresh callback
     # and start the GTK main loop
@@ -177,6 +241,9 @@ class Stream():
 
             self.jackaudio.connect(self.streamnumber, self.devicename)
 
+            self.sdp.start()
+
+
             self.loop.run()
         finally:
             # free resources
@@ -187,8 +254,8 @@ class Stream():
         follower = self.pipeline.get_by_name('d_follower')
         deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
         audio_stream = self.pipeline.get_by_name('a_enc')
-        stream_muxer = self.pipeline.get_by_name('muxer')
-        audio_stream.link_pads('src', stream_muxer, None)
+        # stream_muxer = self.pipeline.get_by_name('muxer')
+        # audio_stream.link_pads('src', stream_muxer, None)
         time.sleep(1)
 
     def stop(self):
@@ -217,57 +284,21 @@ class Stream():
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
             print('DEBUG: Writing dot file for debug information after %s status of pipeline' % status)
-            with open('dot/Dot_Video%d_after_%s.dot' % (videonumber, status), 'w') as dot_file:
-                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+            filename = '%s/Dot_Video%d_after_%s.dot' % (Settings.dotfile_location, videonumber, status)
         else:
             if videonumber == 1:
-                with open('dot/Dot_Video%d_after_play_%s_%s.dot' % (
-                        videonumber, Settings.v_enc[0], Settings.a_enc[0]), 'w') as dot_file:
-                    dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-
-    def build_ui(self):
-        main_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
-        main_window.connect("delete-event", self.on_delete_event)
-
-        video_window = Gtk.DrawingArea.new()
-        video_window.set_double_buffered(False)
-        video_window.connect("realize", self.on_realize)
-        video_window.connect("draw", self.on_draw)
-
-        play_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_PLAY)
-        play_button.connect("clicked", self.on_play)
-
-        pause_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_PAUSE)
-        pause_button.connect("clicked", self.on_pause)
-
-        stop_button = Gtk.Button.new_from_stock(Gtk.STOCK_MEDIA_STOP)
-        stop_button.connect("clicked", self.on_stop)
-
-        self.slider = Gtk.HScale.new_with_range(0, 100, 1)
-        self.slider.set_draw_value(False)
-        self.slider_update_signal_id = self.slider.connect(
-            "value-changed", self.on_slider_changed)
-
-        self.streams_list = Gtk.TextView.new()
-        self.streams_list.set_editable(False)
-
-        controls = Gtk.HBox.new(False, 0)
-        controls.pack_start(play_button, False, False, 2)
-        controls.pack_start(pause_button, False, False, 2)
-        controls.pack_start(stop_button, False, False, 2)
-        controls.pack_start(self.slider, True, True, 0)
-
-        main_hbox = Gtk.HBox.new(False, 0)
-        main_hbox.pack_start(video_window, True, True, 0)
-        main_hbox.pack_start(self.streams_list, False, False, 2)
-
-        main_box = Gtk.VBox.new(False, 0)
-        main_box.pack_start(main_hbox, True, True, 0)
-        main_box.pack_start(controls, False, False, 0)
-
-        main_window.add(main_box)
-        main_window.set_default_size(640, 480)
-        main_window.show_all()
+                filename = '%s/Dot_Video%d_after_play_%s_%s.dot' % (
+                        Settings.dotfile_location, videonumber, Settings.v_enc[0], Settings.a_enc[0])
+        if Settings.debug or videonumber == 1:
+            with open(filename, 'w') as dot_file:
+                dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
+            # find and replace invalid characters, wich are written with the rtpbin element
+            with open(filename, 'r') as file:
+                filedata = file.read()
+            new_filedata = re.sub('\\\\\\\\', '', filedata)
+            new_filedata = new_filedata.replace('\\\\\\"', '\"')
+            with open('%s' % filename, 'w') as file:
+                file.write(new_filedata)
 
     def malm(self, to_add):
 
@@ -318,39 +349,49 @@ class Stream():
 
         #### CALLBACK-FUNCTIONS ####
 
+    # def on_new_rtpbin_pad(self, element, pad):
+    #     print(pad)
+    #     print(pad.name)
+    #     v_payloader = self.pipeline.get_by_name('v_payloader')
+    #     v_pay_pad = v_payloader.get_static_pad('src')
+    #     print('v: %s' % v_pay_pad)
+    #     a_payloader = self.pipeline.get_by_name('a_payloader')
+    #     a_pay_pad = a_payloader.get_static_pad('src')
+    #     print('a: %s' % a_pay_pad)
+    #     me = pad.get_parent()
+    #     me_template = me.get_pad_template_list()
+    #     for template in me_template:
+    #         print(template.name)
+    #
+    #     print(me_template)
+    #     v_pad = Gst.Pad.new_from_template('send_rtp_sink_%u', 'v_pad')
+    #     print (v_pad)
+    #     me_sinkpads = me.get_request_pad('send_rtp_sink_%u')
+    #     print('rtpbin %s' % me_sinkpads)
+    #     v_netsink = self.pipeline.get_by_name('v_netsink')
+    #     return
+
+    def test(self, *args):
+        print('-------------------------- %s' % args)
+        return
+
     def on_new_deinterleave_pad(self, element, pad):
         self.audio_counter += 1
-        # self.deinterleave_pads[self.audio_counter] = pad
         if self.audio_counter == self.audio_to_stream:
             print("STREAM: Connecting audio channel %s to stream number %s" % (self.audio_to_stream, self.streamnumber))
-            # print("# New pad added #")
             deint = pad.get_parent()
-            # print("deint: %s" % deint)
             pipeline = deint.get_parent()
-            # print('pipe: %s' % pipeline)
-            # print(self.current_element)
             follower = pipeline.get_by_name('d_follower')
-            follower_pads = follower.get_pad_template_list()
-            # print('Pads: %s' % follower_pads)
-
-            # print("follower: %s" % follower)
             dest_pad = follower.get_static_pad('sink')
-            # print(dest_pad)
-            # print('Linkable? %s' % pad.can_link(dest_pad))
-            # print("dest pad: %s" % dest_pad)
-            # link_status = deint.link(follower)
             link_status = pad.link_maybe_ghosting(dest_pad)
-            if link_status == False:
+            if not link_status:
                 print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
             else:
-                # print("\n@@@@@@@@@@@@@ Success!!!! @@@@@@@@@@@@@\n%s\n%s\n" % (deint, follower))
                 ret = self.pipeline.set_state(Gst.State.PLAYING)
                 if ret == Gst.StateChangeReturn.FAILURE:
                     print("ERROR: Unable to set the pipeline to the playing state")
                     sys.exit(1)
             self.pipeline.set_state(Gst.State.PLAYING)
-        # deinterleave = pad.get_parent()
-        # pipeline = deinterleave.get_parent()
 
     def on_new_jackaudiosink_pad(self, element, pad):
         print('===============================================================')
@@ -399,31 +440,6 @@ class Stream():
             gui['status'].set_label('%s' % Gst.Element.state_get_name(self.me['status']))
             gui['audio_streaming'].set_label('%s' % self.audio_to_stream)
             return True
-
-        # # if we don't know it yet, query the stream duration
-        # if self.duration == Gst.CLOCK_TIME_NONE:
-        #     ret, self.duration = self.pipeline.query_duration(Gst.Format.TIME)
-        #     if not ret:
-        #         print("ERROR: Could not query current duration")
-        #     else:
-        #         # set the range of the slider to the clip duration (in seconds)
-        #         self.slider.set_range(0, self.duration / Gst.SECOND)
-
-        # ret, current = self.pipeline.query_position(Gst.Format.TIME)
-        # if ret:
-        #     # block the "value-changed" signal, so the on_slider_changed
-        #     # callback is not called (which would trigger a seek the user
-        #     # has not requested)
-        #     self.slider.handler_block(self.slider_update_signal_id)
-
-        #     # set the position of the slider to the current pipeline position
-        #     # (in seconds)
-        #     self.slider.set_value(current / Gst.SECOND)
-
-        #     # enable the signal again
-        #     self.slider.handler_unblock(self.slider_update_signal_id)
-
-        # return True
 
     # this function is called when new metadata is discovered in the stream
     def on_tags_changed(self, playbin, stream):
@@ -555,12 +571,87 @@ class Stream():
         # print('message: %s' % message)
         # print('user_data: %s' % user_data)
         if source:
-            print('DEBUG %s %s: %s' % (Gst.DebugLevel.get_name(level), source.name, message.get()))
+            if 'Gst.Pad' in str(source):
+                sourcename = 'Pad of %s' % source.get_parent().name
+            else:
+                sourcename = source.name
+            string = '%s\t%s\t%s\t%s\n' % (self.devicename, Gst.DebugLevel.get_name(level), sourcename, message.get())
             pass
         else:
-            print('DEBUG %s: %s' % (Gst.DebugLevel.get_name(level), message.get()))
+            string = '%s\t\t%s\t%s\n' % (self.devicename, Gst.DebugLevel.get_name(level), message.get())
             pass
+        logfile = open(Settings.logfile, 'a')
+        n = logfile.write(string)
 
+    def note_caps(self, pad):
+        sdp_params = defaultdict(str)
+        caps = pad.query_caps(None)
+        print('Caps: %s' % caps)
+        if caps:
+            # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps))
+            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))', str(caps))
+
+            # if 'media=(string)audio' in parameters[0]:
+            #     prefix = 'audio_'
+            # elif 'media=(string)video' in parameters[0]:
+            #     prefix = 'video_'
+            # else:
+            for (_, param, value, value2, value3, value4) in parameters:
+                print(param, value, value2, value3, value4)
+                sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
+            if 'audio' in sdp_params.values():
+                print('audio')
+                sdp_params['port'] = self.a_port
+            elif 'video' in sdp_params.values():
+                print('video')
+                sdp_params['port'] = self.v_port
+            return sdp_params
+
+    def createsdp(self, sdp_list):
+        v_netsink = self.pipeline.get_by_name('v_payloader')
+        a_netsink = self.pipeline.get_by_name('a_payloader')
+        for pad in v_netsink.pads:
+            if pad.direction == Gst.PadDirection.SRC:
+                self.sdp_params.append(self.note_caps(pad))
+        for pad in a_netsink.pads:
+            if pad.direction == Gst.PadDirection.SRC:
+                self.sdp_params.append(self.note_caps(pad))
+
+        # print('\n##########\nSourcepad in element payloader created\n##########\n')
+        params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
+        sdp = []
+        # if not self.sdp_generated:
+        sdp.append('v=0')
+        sdp.append('o=- %d %d IN IP4 %s' % (random.randrange(4294967295), 2, Settings.stream_ip))
+        sdp.append('t=0 0')
+        sdp.append('s=GST2SDP')
+
+        # streamnumber = 2
+
+        # add individual streams to SDP
+        for ding in sdp_list:
+            # print('Stream: %s' % stream)
+            sdp.append("m=%s %s RTP/AVP %s" % (ding['media'], ding['port'], ding['payload']))
+            sdp.append('c=IN IP4 %s' % Settings.stream_ip)
+            sdp.append("a=rtpmap:%s %s/%s" % (ding['payload'], ding['encoding-name'], ding['clock-rate']))
+            fmtp = ["a=fmtp:%s" % ding['payload']]
+            for param, value in ding.items():
+                # is parameter an action?
+                if param[0] == 'a' and param[1] == '-':
+                    aparam = "%s:%s" % (param.replace('a-', 'a='), value)
+                    sdp.append(aparam)
+                else:
+                    if param not in params2ignore:
+                        fmtp.append(" %s=%s;" % (param, value))
+            fmtp = ''.join(fmtp)
+            sdp.append(fmtp)
+            sdp.append("a=control:track%d" % 1)
+            print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
+        sdp_str = ('\r\n'.join(sdp))
+        # save sdp
+        with open('%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber), 'w') as sdp_file:
+            sdp_file.write('\r\n'.join(sdp))
+        print('SDP-file written to %s' % str(sdp_file))
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)

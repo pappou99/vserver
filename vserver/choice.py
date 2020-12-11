@@ -96,7 +96,7 @@ class SelectThe:
     """
 
     def __init__(self):
-        self.settings =  {
+        self.container_list =  {
                 # 'containername'    :   [
                     # ['container', {'container_option1' : value1, 'container_option2' : value2}],
                     # [videoformat1, videoformat2, ...],
@@ -108,21 +108,29 @@ class SelectThe:
                 'ts'    :   [
                     ['mpegtsmux', {'alignment' : 7}],    
                     ['video/mpeg_v1','video/mpeg_v2', 'video/mpeg_v4', 'video/x-dirac', 'video/x-h264', 'video/x-h265'], 
-                    ['audio/mpeg_v1', 'audio/mpeg_2', 'audio/mpeg_4', 'audio/x-lpcm', 'audio/x-ac3', 'audio/x-dts', 'audio/x-opus'],
+                    ['audio/mpeg_v1', 'audio/mpeg_v2', 'audio/mpeg_v4', 'audio/x-lpcm', 'audio/x-ac3', 'audio/x-dts', 'audio/x-opus'],
                     ['rtpmp2tpay', {}], 
                     b'GstRTPMP2TPay'
                     ],
-                'webm'    :   [
+                'matroska'    :   [
                     ['matroskamux', {'streamable' : True}],    
-                    ['video/mpeg_v1','video/mpeg_v2', 'video/mpeg_v4', 'video/x-dirac', 'video/x-h264', 'video/x-h265'], 
-                    ['audio/mpeg_v1', 'audio/mpeg_2', 'audio/mpeg_4', 'audio/x-lpcm', 'audio/x-ac3', 'audio/x-dts', 'audio/x-opus'],
+                    ['video/mpeg_v1','video/mpeg_v2', 'video/mpeg_v4', 'video/x-h264', 'video/x-h265', 
+                    'video/x-divx', 'video/x-huffyuv', 'video/x-dv', 'video/x-h263', 'video/x-msmpeg:', 
+                    'image/jpeg', 'video/x-theora', 'video/x-dirac', 'video/x-pn-realvideo_v1', 
+                    'video/x-pn-realvideo_v4', 'video/x-vp8', 'video/x-raw', 'video/x-prores', 
+                    'video/x-wmv_v1', 'video/x-wmv_v3', 'video/x-av1'], 
+                    ['audio/mpeg_v1', 'audio/mpeg_v3', 'audio/mpeg_v2', 'audio/mpeg_v4', 'audio/x-ac3', 
+                    'audio/x-eac3', 'audio/x-dts', 'audio/x-vorbis', 'audio/x-flac', 'audio/x-opus', 
+                    'audio/x-speex', 'audio/x-raw', 'audio/x-tta', 'audio/x-pn-realaudio_v1', 
+                    'audio/x-pn-realaudio_v2', 'audio/x-pn-realaudio_v8', 'audio/x-wma_v1', 'audio/x-wma_v3', 
+                    'audio/x-alaw', 'audio/x-mulaw', 'audio/x-adpcm', 'audio/G722', 'audio/x-adpcm', 'audio/x-lpcm'],
                     ['', {}], 
                     b''
                     ],
                 'flv'   :   [
                     ['flvmux', {'streamable' : True}], 
                     ['video/x-flash-video', 'video/x-flash-screen', 'video/x-vp6-flash', 'video/x-vp6-alpha', 'video/x-h264'], 
-                    ['audio/x-adpcm', 'audio/mpeg_1', 'audio/mpeg_3', 'audio/mpeg_4', 'audio/mpeg_2', 'audio/x-nellymoser', 'audio/x-raw', 'audio/x-alaw', 'audio/x-mulaw', 'audio/x-speex'], 
+                    ['audio/x-adpcm', 'audio/mpeg_v1', 'audio/mpeg_v3', 'audio/mpeg_v4', 'audio/mpeg_v2', 'audio/x-nellymoser', 'audio/x-raw', 'audio/x-alaw', 'audio/x-mulaw', 'audio/x-speex'], 
                     [],
                     ''
                     ]
@@ -156,22 +164,22 @@ class SelectThe:
             }
 
         self.a_enc_list = {
-                'audio/mpeg_1' :   [
+                'audio/mpeg_v1' :   [
                             ['lamemp3enc', {}, 'mpegaudioparse', {}] 
                            ],
-                # 'audio/mpeg_2' : [['faac', {}]],
-                # 'audio/mpeg_4' : [['faac', {}]],
+                # 'audio/mpeg_v2' : [['faac', {}]],
+                # 'audio/mpeg_v4' : [['faac', {}]],
                 # 'audio/x-lpcm' : [['', {}]],
                 # 'audio/x-ac3' : [['', {}]],
                 # 'audio/x-dts' : [['', {}]],
                 'audio/x-opus' :  [
-                            ['avenc_opus', {}, 'opusparse', {}]
-                          , ['opusenc', {}, 'opusparse', {}] 
+                            ['avenc_opus', {}, 'opusparse', {}, 'rtpopuspay', {}]
+                          , ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
                            ]
             }
       
 
-        ind = {str(i):k for i,k in enumerate(self.settings.keys())}
+        ind = {str(i):k for i,k in enumerate(self.container_list.keys())}
         # print("Index list: %s" % ind)
         print('\nPlease choose your Container:\n')
         for key in ind.keys():
@@ -184,12 +192,12 @@ class SelectThe:
         else:
             container = ind[con_choice]
             print("Container: %s" %container)
-            self.muxer = self.settings[container][0]
-            self.possible_v_codecs = self.settings[container][1]
-            self.possible_a_codecs = self.settings[container][2]
-            self.payloader = self.settings[container][3]
+            self.muxer = self.container_list[container][0]
+            self.possible_v_codecs = self.container_list[container][1]
+            self.possible_a_codecs = self.container_list[container][2]
+            self.payloader = self.container_list[container][3]
             # payloader.extend('!')
-            rtppay_str = self.settings[container][4]
+            rtppay_str = self.container_list[container][4]
             print("RTP_Payloader String: %s" % rtppay_str)
             # print(self.possible_v_codecs)
             # print(self.possible_a_codecs)
