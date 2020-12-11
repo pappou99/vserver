@@ -20,6 +20,7 @@
 #
 
 from vServer_secrets import Secrets
+from vserver.codec_options import PossibleInputs
 
 
 class Settings:
@@ -32,7 +33,9 @@ class Settings:
     sdp_file_location = './sdp'
     development = True  # change to true, if you dont have the required hardware (audio- videotestsrc)
     instant_play = False
-    interactive = False
+
+    interactive = True
+    possible_codecs = PossibleInputs.container_list['rtp']
 
     maschinename = 'videoserver1'
     hostname = ''  # will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
@@ -44,11 +47,11 @@ class Settings:
     speed_preset = 3
     amplification = 4
 
-    video_in_name = 'Decklink-Card'  ## must be exactly written like in vServer.choice.py class PossibleInputs
-    if development: video_in_name = 'Test picture generator'  ## must be exactly written like in vServer.choice.py class PossibleInputs
-    audio_in_name = 'Decklink-Card'  ## must be exactly written like in vServer.choice.py class PossibleInputs
+    video_in_name = 'Decklink-Card'  # must be exactly written like in codec_options.py
+    if development: video_in_name = 'Test picture generator'  # must be exactly written like in codec_options.py
+    audio_in_name = 'Decklink-Card'  # must be exactly written like in codec_options.py
     # video_in_name = 'Webcam' ## must be exactly written like in vServer.choice.py class PossibleInputs
-    if development: audio_in_name = 'Test sound generator'  ## must be exactly written like in vServer.choice.py class PossibleInputs
+    if development: audio_in_name = 'Test sound generator'  # must be exactly written like in codec_options.py
     videowidth = '1280'
     videoheight = '720'
 

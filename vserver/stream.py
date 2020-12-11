@@ -19,7 +19,8 @@ from gi.repository import GLib
 from gi.repository import GObject
 
 from vServer_settings import Settings
-from vserver.choice import PossibleInputs
+# from vserver.codec_options import PossibleInputs
+from vserver.choice import SelectThe
 from vserver.jackconnect import Jacking
 
 
@@ -89,8 +90,8 @@ class Stream():
         self.bus.connect("message::state-changed", self.on_state_changed)
         self.bus.connect("message::application", self.on_application_message)
 
-        inp = PossibleInputs()
-        in_options = inp.Generate(video_in_name, audio_in_name, self.stream_id)
+        inp = SelectThe()
+        in_options = inp.generate(video_in_name, audio_in_name, self.stream_id)
         videoinput = in_options[0]
         audioinput = in_options[1]
         v_enc = Settings.v_enc
@@ -143,7 +144,7 @@ class Stream():
             ['capsfilter', None,
              {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [v_enc[0], 'v_enc', v_enc[1]],
-            # [v_enc[2], 'v_parser', v_enc[3] ],#SETTINGS FOR RTP
+            # [v_enc[2], 'v_parser', v_enc[3] ],  # SETTINGS FOR RTP
             # [Settings.muxer[0], 'muxer', Settings.muxer[1]],#SETTINGS FOR RTMP
             [v_enc[4], 'v_payloader', v_enc[5]],  # SETTINGS FOR RTP
             # ['udpsink', 'v_netsink', {'host': Settings.stream_ip, 'port': self.port}]  # SETTINGS FOR RTP

@@ -39,13 +39,13 @@ from gi.repository import Gtk
 from gi.repository import Gst
 
 import vserver.mqtt as mqtt
-from vserver.choice import SelectThe, PossibleInputs
+from vserver.choice import SelectThe
 from vserver.stream import Stream
 from vServer_settings import Settings
 from vserver.benchmark import Benchmark
 from vserver.ui import ui
 
-timeout = 2
+timeout = 5
 
 
 def make_directories(directory_list):
@@ -99,11 +99,12 @@ class Main:
             if self._interactive_user_choice is not None:
                 os.system('clear')
                 select = SelectThe()
-                Settings.muxer = select.muxer
-                Settings.payloader = select.payloader
-                Settings.v_enc = select.Video()
-                Settings.a_enc = select.Audio()
-                Settings.num_streams = select.Number()
+                # Settings.possible_codecs = select.container()
+                # Settings.muxer = select.muxer
+                # Settings.payloader = select.payloader
+                Settings.v_enc = select.video()
+                Settings.a_enc = select.audio()
+                Settings.num_streams = select.number()
 
         print('Muxer: %s' % Settings.muxer)
         print('Payloader: %s' % Settings.payloader)
@@ -111,11 +112,11 @@ class Main:
         print("Audioencoder: %s" % Settings.a_enc)
         print("Number of Streams: %s" % Settings.num_streams)
 
-        # my_inputs = PossibleInputs.Define(PossibleInputs)
+        # my_inputs = PossibleInputs.define(PossibleInputs)
 
         # enable the following line for interactive input selection
         #
-        # PossibleInputs.Define(PossibleInputs)
+        # PossibleInputs.define(PossibleInputs)
         # self.v_in = my_inputs[0]
         # print("Video : %s" % Settings.video_in_name)
         # self.a_in = my_inputs[1]
