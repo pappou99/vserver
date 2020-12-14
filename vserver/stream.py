@@ -650,9 +650,10 @@ class Stream():
             print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
         sdp_str = ('\r\n'.join(sdp))
         # save sdp
-        with open('%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber), 'w') as sdp_file:
+        filename = '%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber)
+        with open(filename, 'w') as sdp_file:
             sdp_file.write('\r\n'.join(sdp))
-        print('SDP-file written to %s' % str(sdp_file))
+        print('SDP-file written to %s' % filename)
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)
