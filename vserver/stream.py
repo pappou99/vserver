@@ -609,14 +609,14 @@ class Stream():
             return sdp_params
 
     def createsdp(self, sdp_list):
-        v_netsink = self.pipeline.get_by_name('v_payloader')
-        a_netsink = self.pipeline.get_by_name('a_payloader')
-        for pad in v_netsink.pads:
+        source = self.pipeline.get_by_name('rtpbin')
+        # audio = self.pipeline.get_by_name('a_payloader')
+        for pad in source.pads:
             if pad.direction == Gst.PadDirection.SRC:
                 self.sdp_params.append(self.note_caps(pad))
-        for pad in a_netsink.pads:
-            if pad.direction == Gst.PadDirection.SRC:
-                self.sdp_params.append(self.note_caps(pad))
+        # for pad in audio.pads:
+        #     if pad.direction == Gst.PadDirection.SRC:
+        #         self.sdp_params.append(self.note_caps(pad))
 
         # print('\n##########\nSourcepad in element payloader created\n##########\n')
         params2ignore = set(['encoding-name', 'timestamp-offset', 'payload', 'clock-rate', 'media', 'port'])
@@ -650,9 +650,10 @@ class Stream():
             print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
         sdp_str = ('\r\n'.join(sdp))
         # save sdp
-        with open('%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber), 'w') as sdp_file:
+        filename = '%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber)
+        with open(filename, 'w') as sdp_file:
             sdp_file.write('\r\n'.join(sdp))
-        print('SDP-file written to %s' % str(sdp_file))
+        print('SDP-file written to %s' % filename)
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)
