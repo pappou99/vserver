@@ -201,7 +201,7 @@ class Stream():
         source_pad = source.get_static_pad('src')
         sink_pad_template = sink.get_pad_template('send_rtp_sink_%u')
         sink_pad = sink.request_pad(sink_pad_template, None, None)
-        print('f1 %s' % source_pad, sink_pad)
+        # print('f1 %s' % source_pad, sink_pad)
         source_pad.link(sink_pad)
         return
     # def create_and_link_gstbin_source_pads(self, source, sink):
@@ -284,7 +284,7 @@ class Stream():
 
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
-            print('DEBUG: Writing dot file for debug information after %s status of pipeline' % status)
+            print('DEBUG: Writing dot file after "%s"' % status)
             filename = '%s/Dot_Video%d_after_%s.dot' % (Settings.dotfile_location, videonumber, status)
         else:
             if videonumber == 1:
@@ -473,8 +473,10 @@ class Stream():
             return
 
         self.me['status'] = new
-        print("State changed from %s to %s" % (
-            Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)))
+        print("%s: State changed from %s to %s" % (
+            self.devicename, Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)
+        )
+              )
 
         if old == Gst.State.READY and new == Gst.State.PAUSED:
             # for extra responsiveness we refresh the GUI as soons as
@@ -587,7 +589,7 @@ class Stream():
     def note_caps(self, pad):
         sdp_params = defaultdict(str)
         caps = pad.query_caps(None)
-        print('Caps: %s' % caps)
+        print('RtpBin Caps: %s' % caps)
         if caps:
             # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps))
             parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))', str(caps))
@@ -598,13 +600,13 @@ class Stream():
             #     prefix = 'video_'
             # else:
             for (_, param, value, value2, value3, value4) in parameters:
-                print(param, value, value2, value3, value4)
+                # print(param, value, value2, value3, value4)
                 sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
             if 'audio' in sdp_params.values():
-                print('audio')
+                # print('audio')
                 sdp_params['port'] = self.a_port
             elif 'video' in sdp_params.values():
-                print('video')
+                # print('video')
                 sdp_params['port'] = self.v_port
             return sdp_params
 
@@ -653,7 +655,7 @@ class Stream():
         filename = '%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber)
         with open(filename, 'w') as sdp_file:
             sdp_file.write('\r\n'.join(sdp))
-        print('SDP-file written to %s' % filename)
+        print('STREAM: SDP-file written to %s' % filename)
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)

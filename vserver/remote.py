@@ -57,5 +57,6 @@ class Remote():
             me['stream'].cleanup()
             for i in Settings.streams:
                 print(i)
+                return
         else:
             print('Video was already stopped. Nothing to do!')

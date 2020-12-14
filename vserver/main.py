@@ -106,11 +106,8 @@ class Main:
                 Settings.a_enc = select.audio()
                 Settings.num_streams = select.number()
 
-        print('Muxer: %s' % Settings.muxer)
-        print('Payloader: %s' % Settings.payloader)
-        print("Videoencoder: %s" % Settings.v_enc)
-        print("Audioencoder: %s" % Settings.a_enc)
-        print("Number of Streams: %s" % Settings.num_streams)
+        print('Videosettings: %s\nAudiosettings: %s\nNumber of Streams: %s' % (
+            Settings.v_enc, Settings.a_enc, Settings.num_streams))
 
         # my_inputs = PossibleInputs.define(PossibleInputs)
 
@@ -123,7 +120,7 @@ class Main:
         # print("Audio: %s" % Settings.audio_in_name)
 
         # create streams
-        print("Creating streams\n")
+        print("MAIN: Creating streams\n")
         for streamnumber in range(1, Settings.num_streams + 1, 1):
             Settings.streams.append(dict())
             me = Settings.streams[streamnumber]
