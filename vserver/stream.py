@@ -273,7 +273,7 @@ class Stream:
 
     def write_dotfile(self, videonumber, status, ):
         if Settings.debug:
-            print('DEBUG: Writing dot file after "%s"' % status)
+            print('DEBUG: Writing dot file after "%s" for Video %s' % (status, videonumber))
             filename = '%s/Dot_Video%d_after_%s.dot' % (Settings.dotfile_location, videonumber, status)
         else:
             if videonumber == 1:
