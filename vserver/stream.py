@@ -282,7 +282,7 @@ class Stream:
         if Settings.debug or videonumber == 1:
             with open(filename, 'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
-            # find and replace invalid characters, wich are written with the rtpbin element
+            # find and replace invalid characters, which are written with the rtpbin element
             with open(filename, 'r') as file:
                 filedata = file.read()
             new_filedata = re.sub('\\\\\\\\', '', filedata)
