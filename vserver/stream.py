@@ -31,10 +31,14 @@ class Stream:
 
     def __init__(self, streamnumber, video_in_name, audio_in_name):
 
+        self.streamnumber = streamnumber
+        self.stream_id = streamnumber - 1
+        self.devicename = 'Video %s' % self.streamnumber
+
         # initialize GStreamer
         Gst.init(sys.argv)
         GObject.threads_init()
-        self.jackaudio = Jacking()
+        self.jackaudio = Jacking(self.devicename)
         self.loop = GLib.MainLoop()
 
         # register a function that GLib will call every second
@@ -50,9 +54,6 @@ class Stream:
         # initialize GTK
         # Gtk.init(sys.argv)
 
-        self.streamnumber = streamnumber
-        self.stream_id = streamnumber - 1
-        self.devicename = 'Video %s' % self.streamnumber
         self.port = Settings.startport + self.stream_id
         self.v_port = Settings.startport + self.stream_id * 8
         self.a_port = self.v_port + 2

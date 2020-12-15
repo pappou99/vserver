@@ -42,7 +42,7 @@ def error(msg):
     print('JACK ERROR:', msg)
 
 class Jacking(): #threading.Thread
-    def __init__(self, clientname=Settings.hostname):
+    def __init__(self, clientname):
         self.client = jack.Client(clientname, servername=None)
         self.checks()
         time.sleep(0.5)
