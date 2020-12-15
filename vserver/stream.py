@@ -27,8 +27,7 @@ from vserver.jackconnect import Jacking
 # http://docs.gstreamer.com/display/GstSDK/Basic+tutorial+5%3A+GUI+toolkit+integration
 
 
-class Stream():
-    killswitch = False
+class Stream:
 
     def __init__(self, streamnumber, video_in_name, audio_in_name):
 
@@ -62,8 +61,8 @@ class Stream():
         self.audio_counter = 0
         self.me = Settings.streams[streamnumber]
         self.pipe_status = self.me['status'] = Gst.State.NULL
+
         self._elements = []
-        self.duration = Gst.CLOCK_TIME_NONE
         self.sdp_params = []
 
         self.pipeline = Gst.Pipeline()
@@ -129,8 +128,8 @@ class Stream():
             ['queue', None, {}],
             ['jackaudiosink', 'jacksink', {'connect': 0, 'client-name': self.devicename}]
         ]
-        # Video input
 
+        # Video input
         videopipe = [
             videoinput,
             ['textoverlay', None,
@@ -174,20 +173,9 @@ class Stream():
 
         self.create_and_link_gstbin_sink_pads(self.v_payloader, self.rtpbin)
         self.create_and_link_gstbin_sink_pads(self.a_payloader, self.rtpbin)
-        # self.rtpbin.connect('pad-added', self.test)
-        # self.create_and_link_gstbin_source_pads(self.rtpbin, self.v_netsink)
-        # self.create_and_link_gstbin_source_pads(self.rtpbin, self.a_netsink)
 
-        # self.v_payloader.link(getattr(self, 'rtpbin'))
-        # # self.rtpbin.connect('pad-added', self.on_new_rtpbin_pad)
-        # self.a_payloader.link(getattr(self, 'rtpbin'))
         self.rtpbin.link(getattr(self, 'v_netsink'))
         self.rtpbin.link(getattr(self, 'a_netsink'))
-
-
-
-        # self.a_parser.link(getattr(self, 'muxer'))
-        # self.a_parser.link(getattr(self, 'muxer'))
 
         self.write_dotfile(self.streamnumber, 'malm')
 

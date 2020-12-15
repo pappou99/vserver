@@ -27,7 +27,7 @@ from vServer_settings import Settings
 from vserver.stream import Stream
 
 
-class Remote():
+class Remote:
     def __init__(self):
         pass
 

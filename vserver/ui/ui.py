@@ -39,7 +39,7 @@ class Ui(threading.Thread, Gtk.Window):
         self.main_box= Gtk.VBox.new(False, 5)
         self.add(self.main_box)
 
-        #add a horizontal box for all the stream controls etc.
+        # add a horizontal box for all the stream controls etc.
         self.control_hbox = Gtk.HBox.new(False, 0)
         self.main_box.add(self.control_hbox)
 
@@ -53,7 +53,7 @@ class Ui(threading.Thread, Gtk.Window):
         # index_box.pack_start(status_label, False, False, 5)
         # self.control_hbox.pack_start(index_box, False, False, 5)
 
-        #add start buttons
+        # add start buttons
         for streamnumber in range(1, Settings.num_streams+1):
             Settings.ui_elements.append(dict())
             gui = Settings.ui_elements[streamnumber]
