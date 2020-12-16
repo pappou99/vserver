@@ -25,7 +25,6 @@ import time
 import json
 
 from vServer_settings import Settings
-# from vserver.stream import Stream
 from vserver.remote import Remote
 
 
@@ -45,7 +44,6 @@ class Mqtt(Thread):
 
         # Building the topic we want to subscribe
         self.my_base_topic = Settings.mqtt_topic.copy()
-        # self.my_base_topic.append(topic)
 
         self.my_status_topic = self.my_base_topic.copy()
         self.my_status_topic.extend(Settings.mqtt_topic_for_status)
@@ -60,7 +58,7 @@ class Mqtt(Thread):
         """
         print('MQTT(%s): Connecting to server at %s:%s' % (self.name, self.host, self.port))
         self.client.connect(self.host, self.port, 60)
-        self.client.publish('%s' % (self.my_status_topic_str), 'init')
+        self.client.publish('%s' % self.my_status_topic_str, 'init')
         self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
@@ -77,11 +75,9 @@ class Mqtt(Thread):
             print('MQTT(%s): Bad connection, returned code: %s' % (self.name, rc))
 
     def on_publish(self, client, userdata, msg):
-        print('----------published')
         pass
 
     def on_subscribed(self, client, userdata, msg):
-        print('----------subscribed')
         pass
 
 
@@ -119,33 +115,17 @@ class MqttRemote(Mqtt):
 
         print('MQTT(%s): Message received on topic: %s | message: %s' % (self.name, msg.topic, msg.payload))
         topics = msg.topic.split("/")
-        # print(topics)
         video_no = int(topics[-3])
         audio_no = int(topics[-1])
         remote = Remote()  # TODO wieso? -> Thread
         if msg.payload == ('' or b''):
             print('MQTT(%s): No payload was submitted! Don\'t know what to do!')
         elif msg.payload == MqttCommands.play:
-            # print(Settings.streams[video_no].__dict__)
             print('MQTT(%s): Received play command for stream %s with audio %s' % (self.name, video_no, audio_no))  #
             remote.play(video_no, audio_no)
-            # # print(Settings.streams)
-            # if Settings.streams[video_no] == None:
-            #     print('\nMQTT: Preparing videostream %s\n' % video_no)
-            #     Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)
-            # elif Settings.streams[video_no] != None:# TODO: Untested
-            #     print('MQTT: First stopping the videostream %s\n' % video_no)# TODO: Untested
-            #     Settings.streams[video_no].stop()# TODO: Untested
-            #     Settings.streams[video_no] = Stream(video_no-1, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
-            # Settings.streams[video_no].audio_in_stream = audio_no
-            # Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
             print('MQTT(%s): Received stop command for stream %s' % (self.name, video_no))
             remote.stop(video_no)
-            # if Settings.streams[video_no] != None:
-            #     print('MQTT: Stopping video %s\n' % video_no)
-            #     Settings.streams[video_no].stop()
-            #     print(Settings.streams)
 
 
 class MqttPublisher(Mqtt):

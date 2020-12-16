@@ -45,12 +45,9 @@ class SelectThe:
     def container(self):
 
         ind = {str(i): k for i, k in enumerate(self.options.container_list.keys())}
-        # print("Index list: %s" % ind)
         print('\nPlease choose your Container:\n')
         for key in ind.keys():
             print('%s : %s' % (key, ind[key]))
-        # my_input = input()
-        # print(7*my_input)
         con_choice = input()
         if con_choice == '0':
             quit()
@@ -62,11 +59,8 @@ class SelectThe:
             self.possible_v_codecs = Settings.possible_codecs[1]
             self.possible_a_codecs = Settings.possible_codecs[2]
             self.payloader = Settings.possible_codecs[3]
-            # payloader.extend('!')
             rtppay_str = Settings.possible_codecs[4]
             print("RTP_Payloader String: %s" % rtppay_str)
-            # print(self.possible_v_codecs)
-            # print(self.possible_a_codecs)
 
     def video(self):
         v_enc = self.codec("Videoformat", Settings.possible_codecs[1], self.options.v_enc_list)
@@ -95,8 +89,6 @@ class SelectThe:
                 print('%s : %s' % (num, setting))
                 num += 1
         choice = encoder_list[dictionary[int(input())]]
-        # print("\nNumber of options for this choice: %s" % len(choice))
-        # print(choice)
         if len(choice) == 1:
             coder = choice[0]
         else:
@@ -105,7 +97,6 @@ class SelectThe:
             for codec in range(len(choice)):
                 print('%d : %s' % (codec + 1, choice[codec][0]))
             coder = choice[int(input()) - 1]
-        # coder.extend('!')
         print("Your %s choice: %s" % (name, coder))
         return coder
 
@@ -119,7 +110,6 @@ class SelectThe:
                 print('%s : %s' % (num, setting))
                 num += 1
         choice = dictionary[int(input())]
-        # print("\nNumber of options for this choice: %s" % len(choice))
         print("Your %s choice: %s" % (name, choice))
         return choice
 
@@ -137,7 +127,6 @@ class SelectThe:
             ],
             'Test sound generator': [
                 ['audiotestsrc', None, {'is-live': True, 'do-timestamp': True, 'wave': 'pink-noise', 'volume': 0.03}]
-                # , '!', 'audio/x-raw,channels=8'
             ]
         }
         return v_input_list, a_input_list
@@ -148,22 +137,16 @@ class SelectThe:
         """
 
         params = self.list(self, 1)
-        # print (params)
         v_parameter = params[0]
         possible_v_inputs = []
         for option in v_parameter.items():
             possible_v_inputs.append(option[0])
-        # print("Possible Inputs: %s" % possible_v_inputs)
         in_v_choice = SelectThe.input("Video Input", possible_v_inputs, v_parameter)
-        # print(in_v_choice)
         a_parameter = params[1]
         possible_a_inputs = []
         for option in a_parameter.items():
             possible_a_inputs.append(option[0])
-        # print("Possible Inputs: %s" % possible_v_inputs)
         in_a_choice = SelectThe.input("Audio Input", possible_a_inputs, a_parameter)
-        # print(in_a_choice)
-        # return in_v_choice, in_a_choice
         Settings.video_in_name = in_v_choice
         Settings.audio_in_name = in_a_choice
 
@@ -176,5 +159,4 @@ class SelectThe:
         a_parameter = self.list(device)[1]
         v_in = v_parameter[v_inputchoice][0]
         a_in = a_parameter[a_inputchoice][0]
-        # print("Video in: %s" % v_in)
         return v_in, a_in
