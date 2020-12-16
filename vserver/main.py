@@ -38,7 +38,7 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gtk
 from gi.repository import Gst
 
-import vserver.mqtt as mqtt
+from vserver.mqtt import MqttRemote, MqttPublisher
 from vserver.choice import SelectThe
 from vserver.stream import Stream
 from vServer_settings import Settings
@@ -119,20 +119,25 @@ class Main:
         # self.a_in = my_inputs[1]
         # print("Audio: %s" % Settings.audio_in_name)
 
+        # enable MQTT-remote support
+        mqtt_remote = MqttRemote()
+        Settings.mqtt_elements.append(mqtt_remote)
+        mqtt_remote.start()
+
         # create streams
         print("MAIN: Creating streams\n")
         for streamnumber in range(1, Settings.num_streams + 1, 1):
             Settings.streams.append(None)
-            stream = Settings.streams[streamnumber] = Stream(streamnumber)
-            me = Stream(streamnumber)
-            me.prepare(Settings.video_in_name, Settings.audio_in_name)
+            Settings.streams[streamnumber] = stream = Stream(streamnumber)
+            # me = Stream(streamnumber)
+            stream.prepare(Settings.video_in_name, Settings.audio_in_name)
+
+            mqtt_publisher = MqttPublisher(streamnumber)
+            Settings.mqtt_elements.append(mqtt_publisher)
+            mqtt_publisher.start()
 
         if Settings.instant_play:
             stream.start()# instantly play video for testing
-
-        # enable MQTT-remote support
-        mqtt_client = mqtt.MqttRemote(sub_topic='#')
-        mqtt_client.start()
 
         # ### create gui ###
         gui = Settings.ui_elements[0] = ui.Ui()
