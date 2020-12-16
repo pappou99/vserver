@@ -42,13 +42,13 @@ def error(msg):
     print('JACK ERROR:', msg)
 
 class Jacking(): #threading.Thread
-    def __init__(self, clientname=Settings.hostname):
+    def __init__(self, clientname):
         self.client = jack.Client(clientname, servername=None)
         self.checks()
         time.sleep(0.5)
 
     def connect(self, videonumber, clientname):
-        print('===================JACKING====================')
+        # print('===================JACKING====================')
         self.video_id = videonumber -1
         self.clientname = clientname
         self.client = jack.Client('control_%s' % self.clientname, servername=None)
@@ -58,7 +58,7 @@ class Jacking(): #threading.Thread
         with self.client:
             capture = self.client.get_ports(name_pattern='%s' % self.clientname, is_audio=True, is_output=True, is_physical=False)
             playback = self.client.get_ports(is_physical=True, is_input=True)
-            print('Jack: Playbackports: %s' % playback)
+            # print('Jack: Playbackports: %s' % playback)
             if Settings.development == False:
                 # delete first two elements of the madi-card (analogue jack outputs, we will never connect!)
                 print('JACK: Removing the first two ports')
@@ -75,7 +75,7 @@ class Jacking(): #threading.Thread
                 raise RuntimeError("JACK: No physical playback ports")
             for src, dest in zip(capture, real_playback):
                 self.client.connect(src, dest)
-                print('JACK: Linked %s to %s' % (src, dest))
+                print('JACK: Linked %s \t to \t %s' % (src, dest))
                 # time.sleep(0.5)
 
     def checks(self):

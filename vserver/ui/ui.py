@@ -33,13 +33,14 @@ from vserver.remote import Remote
 
 class Ui(threading.Thread, Gtk.Window):
     def __init__(self):
+        Settings.ui_elements[0] = self
         Gtk.Window.__init__(self, title="Videoserver %s" % Settings.maschinename)
         self.set_border_width(10)
 
         self.main_box= Gtk.VBox.new(False, 5)
         self.add(self.main_box)
 
-        #add a horizontal box for all the stream controls etc.
+        # add a horizontal box for all the stream controls etc.
         self.control_hbox = Gtk.HBox.new(False, 0)
         self.main_box.add(self.control_hbox)
 
@@ -53,11 +54,11 @@ class Ui(threading.Thread, Gtk.Window):
         # index_box.pack_start(status_label, False, False, 5)
         # self.control_hbox.pack_start(index_box, False, False, 5)
 
-        #add start buttons
+        # add start buttons
         for streamnumber in range(1, Settings.num_streams+1):
             Settings.ui_elements.append(dict())
             gui = Settings.ui_elements[streamnumber]
-            statusname = Gst.Element.state_get_name(Settings.streams[streamnumber]['status'])
+            statusname = Gst.Element.state_get_name(Settings.streams[streamnumber].pipe_status)
 
             gui['box'] = Gtk.VBox.new(False, 0)
             gui['stream_label'] = Gtk.Label(label="Video %s" % streamnumber)
@@ -102,7 +103,7 @@ class Ui(threading.Thread, Gtk.Window):
     def start_stream_gui(self, switch, gparam, streamnumber):
         if switch.get_active():
             audiotrack = Settings.ui_elements[streamnumber]['select_audio'].get_value_as_int()
-            Remote.play(None, streamnumber, audiotrack)#TODO change audio selection to dropdown
+            Remote.play(None, streamnumber, audiotrack)
             # Settings.ui_elements[streamnumber]['button'].set_label('Stop (%s)' % streamnumber)
         else:
             Remote.stop(None, streamnumber)

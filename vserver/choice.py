@@ -20,68 +20,8 @@
 #
 
 from vServer_settings import Settings
+from vserver.codec_options import PossibleInputs
 
-class PossibleInputs:
-    """
-    Class for input settings
-    For every device define a input in following structure:
-    'Readable name' : ['gstreamer_element', 'give_a_name_to_elment or None' {'option1_key' : 'option1_value', 'option2_key' : 'option2_value' }, ... ]
-    For my Decklink card, which provides 8 different SDI-Video inputs a placeholder "device" will later replaced by a number which depends on how many inputs I will capture.
-    """
-  
-    def List(self, device):
-        v_input_list = {
-                'Decklink-Card' : [['decklinkvideosrc', None, {'device-number' : device, 'do-timestamp' : True}]],
-                'Test picture generator' : [['videotestsrc', None, {'is-live' : True}]],
-                'Webcam' : [['v4l2src', None, {}]]
-            }
-        a_input_list = {
-                'Decklink-Card' : [
-                    ['decklinkaudiosrc', None, {'device-number' : device, 'connection' : 'embedded', 'channels' : Settings.audio_channels_from_sdi, 'do-timestamp' : True}]
-              ],
-                'Test sound generator' : [
-                    ['audiotestsrc', None, {'is-live' : True, 'do-timestamp' : True, 'wave': 'pink-noise', 'volume' : 0.03}] #, '!', 'audio/x-raw,channels=8'
-              ]
-            }
-        return v_input_list, a_input_list
-
-    def Define(self):
-        """
-        function to interactiveley select the audio and videosource from the defined settings in class PossibleInputs
-        """
-
-        params = PossibleInputs.List(self, 1)
-        # print (params)
-        v_parameter = params[0]
-        possible_v_inputs = []
-        for option in v_parameter.items():
-            possible_v_inputs.append(option[0])
-        # print("Possible Inputs: %s" % possible_v_inputs)
-        in_v_choice = SelectThe.input(self, "Video Input", possible_v_inputs, v_parameter)
-        # print(in_v_choice)
-        a_parameter = params[1]
-        possible_a_inputs = []
-        for option in a_parameter.items():
-            possible_a_inputs.append(option[0])
-        # print("Possible Inputs: %s" % possible_v_inputs)
-        in_a_choice = SelectThe.input(self, "Audio Input", possible_a_inputs, a_parameter)
-        # print(in_a_choice)
-        # return in_v_choice, in_a_choice
-        Settings.video_in_name = in_v_choice
-        Settings.audio_in_name = in_a_choice
-
-    
-    def Generate(self, v_inputchoice, a_inputchoice, device):
-        """
-        Function to generate the dynamic input patterns
-        """
-
-        v_parameter = self.List(device)[0]
-        a_parameter = self.List(device)[1]
-        v_in = v_parameter[v_inputchoice][0]
-        a_in = a_parameter[a_inputchoice][0]
-        # print("Video in: %s" % v_in)
-        return v_in, a_in
 
 class SelectThe:
     """Class SelectThe
@@ -96,125 +36,51 @@ class SelectThe:
     """
 
     def __init__(self):
-        self.container_list =  {
-                # 'containername'    :   [
-                    # ['container', {'container_option1' : value1, 'container_option2' : value2}],
-                    # [videoformat1, videoformat2, ...],
-                    # [audioformat1, audioformat2, ...],
-                    # ['payloader', {}],
-                    # b'payloader_string'
+        self.options = PossibleInputs()
+        self.muxer = None
+        self.possible_a_codecs = None
+        self.possible_v_codecs = None
+        self.payloader = None
 
-                'Choose nothing and exit' : '',
-                'ts'    :   [
-                    ['mpegtsmux', {'alignment' : 7}],    
-                    ['video/mpeg_v1','video/mpeg_v2', 'video/mpeg_v4', 'video/x-dirac', 'video/x-h264', 'video/x-h265'], 
-                    ['audio/mpeg_v1', 'audio/mpeg_v2', 'audio/mpeg_v4', 'audio/x-lpcm', 'audio/x-ac3', 'audio/x-dts', 'audio/x-opus'],
-                    ['rtpmp2tpay', {}], 
-                    b'GstRTPMP2TPay'
-                    ],
-                'matroska'    :   [
-                    ['matroskamux', {'streamable' : True}],    
-                    ['video/mpeg_v1','video/mpeg_v2', 'video/mpeg_v4', 'video/x-h264', 'video/x-h265', 
-                    'video/x-divx', 'video/x-huffyuv', 'video/x-dv', 'video/x-h263', 'video/x-msmpeg:', 
-                    'image/jpeg', 'video/x-theora', 'video/x-dirac', 'video/x-pn-realvideo_v1', 
-                    'video/x-pn-realvideo_v4', 'video/x-vp8', 'video/x-raw', 'video/x-prores', 
-                    'video/x-wmv_v1', 'video/x-wmv_v3', 'video/x-av1'], 
-                    ['audio/mpeg_v1', 'audio/mpeg_v3', 'audio/mpeg_v2', 'audio/mpeg_v4', 'audio/x-ac3', 
-                    'audio/x-eac3', 'audio/x-dts', 'audio/x-vorbis', 'audio/x-flac', 'audio/x-opus', 
-                    'audio/x-speex', 'audio/x-raw', 'audio/x-tta', 'audio/x-pn-realaudio_v1', 
-                    'audio/x-pn-realaudio_v2', 'audio/x-pn-realaudio_v8', 'audio/x-wma_v1', 'audio/x-wma_v3', 
-                    'audio/x-alaw', 'audio/x-mulaw', 'audio/x-adpcm', 'audio/G722', 'audio/x-adpcm', 'audio/x-lpcm'],
-                    ['', {}], 
-                    b''
-                    ],
-                'flv'   :   [
-                    ['flvmux', {'streamable' : True}], 
-                    ['video/x-flash-video', 'video/x-flash-screen', 'video/x-vp6-flash', 'video/x-vp6-alpha', 'video/x-h264'], 
-                    ['audio/x-adpcm', 'audio/mpeg_v1', 'audio/mpeg_v3', 'audio/mpeg_v4', 'audio/mpeg_v2', 'audio/x-nellymoser', 'audio/x-raw', 'audio/x-alaw', 'audio/x-mulaw', 'audio/x-speex'], 
-                    [],
-                    ''
-                    ]
-            }
-        self.v_enc_list = {
-                # name    :   [[codec1, codec1_option1, opt2, ...], [codec2, codec1_option1]]
-                'video/mpeg_v1' :   [
-                            ['avenc_mpeg1video', {}, 'mpegvideoparse', {}]
-                          , ['mpeg2enc', {'format' : '0'}, 'mpegvideoparse', {}] 
-                           ],
-                'video/mpeg_v2' :   [
-                            ['avenc_mpeg2video', {}, 'mpegvideoparse', {}]
-                          , ['mpeg2enc', {}, 'mpegvideoparse', {}] 
-                           ],
-                'video/mpeg_v4' :   [
-                            ['avenc_mpeg4', {}, 'mpeg4videoparse', {}] 
-                           ],
-                # 'video/x-dirac' :   [['']],
-                'video/x-h264'  :   [
-                                ['avenc_h264_omx', {}, 'h264parse', {}]
-                              , ['nvh264enc', {}, 'h264parse', {}]
-                              , ['openh264enc', {}, 'h264parse', {}]
-                              , ['vaapih264enc', {}, 'h264parse', {}]
-                              , ['x264enc', {}, 'h264parse', {}] 
-                               ],
-                'video/x-h265'  :   [
-                                ['nvh265enc', {}, 'h265parse', {}]
-                              , ['vaapih265enc', {}, 'h265parse', {}]
-                              , ['x265enc', {}, 'h265parse', {}] 
-                               ]
-            }
+    def container(self):
 
-        self.a_enc_list = {
-                'audio/mpeg_v1' :   [
-                            ['lamemp3enc', {}, 'mpegaudioparse', {}] 
-                           ],
-                # 'audio/mpeg_v2' : [['faac', {}]],
-                # 'audio/mpeg_v4' : [['faac', {}]],
-                # 'audio/x-lpcm' : [['', {}]],
-                # 'audio/x-ac3' : [['', {}]],
-                # 'audio/x-dts' : [['', {}]],
-                'audio/x-opus' :  [
-                            ['avenc_opus', {}, 'opusparse', {}, 'rtpopuspay', {}]
-                          , ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
-                           ]
-            }
-      
-
-        ind = {str(i):k for i,k in enumerate(self.container_list.keys())}
+        ind = {str(i): k for i, k in enumerate(self.options.container_list.keys())}
         # print("Index list: %s" % ind)
         print('\nPlease choose your Container:\n')
         for key in ind.keys():
             print('%s : %s' % (key, ind[key]))
         # my_input = input()
         # print(7*my_input)
-        con_choice=input()
+        con_choice = input()
         if con_choice == '0':
             quit()
         else:
             container = ind[con_choice]
-            print("Container: %s" %container)
-            self.muxer = self.container_list[container][0]
-            self.possible_v_codecs = self.container_list[container][1]
-            self.possible_a_codecs = self.container_list[container][2]
-            self.payloader = self.container_list[container][3]
+            print("Container: %s" % container)
+            Settings.possible_codecs = self.options.container_list[container]
+            self.muxer = Settings.possible_codecs[0]
+            self.possible_v_codecs = Settings.possible_codecs[1]
+            self.possible_a_codecs = Settings.possible_codecs[2]
+            self.payloader = Settings.possible_codecs[3]
             # payloader.extend('!')
-            rtppay_str = self.container_list[container][4]
+            rtppay_str = Settings.possible_codecs[4]
             print("RTP_Payloader String: %s" % rtppay_str)
             # print(self.possible_v_codecs)
             # print(self.possible_a_codecs)
 
-    def Video(self):
-        v_enc = self.codec("Videoformat",self.possible_v_codecs, self.v_enc_list)
+    def video(self):
+        v_enc = self.codec("Videoformat", Settings.possible_codecs[1], self.options.v_enc_list)
         # v_enc.extend('!')
         # print('Videoencoder {}'.format(v_enc))
         return v_enc
 
-    def Audio(self):
-        a_enc_pip = self.codec("Audioformat", self.possible_a_codecs, self.a_enc_list)
+    def audio(self):
+        a_enc_pip = self.codec("Audioformat", Settings.possible_codecs[2], self.options.a_enc_list)
         # a_enc_pip.extend([{'name' : 'a_enc', "!", 'mux.'])
         # print(a_enc_pip)
         return a_enc_pip
 
-    def Number(self):
+    def number(self):
         print('\nHow much streams to create?\nChoose a number from 1 to 8\n')
         num_streams = int(input())
         return num_streams
@@ -231,14 +97,14 @@ class SelectThe:
         choice = encoder_list[dictionary[int(input())]]
         # print("\nNumber of options for this choice: %s" % len(choice))
         # print(choice)
-        if len(choice) == 1: 
+        if len(choice) == 1:
             coder = choice[0]
         else:
             print("\nNumber of options for this choice: %s" % len(choice))
             print('Which option to choose?\n')
             for codec in range(len(choice)):
-                print('%d : %s' % (codec +1, choice[codec][0]))
-            coder = choice[int(input())-1]
+                print('%d : %s' % (codec + 1, choice[codec][0]))
+            coder = choice[int(input()) - 1]
         # coder.extend('!')
         print("Your %s choice: %s" % (name, coder))
         return coder
@@ -256,3 +122,59 @@ class SelectThe:
         # print("\nNumber of options for this choice: %s" % len(choice))
         print("Your %s choice: %s" % (name, choice))
         return choice
+
+    def list(self, device):
+        v_input_list = {
+            'Decklink-Card': [['decklinkvideosrc', None, {'device-number': device, 'do-timestamp': True}]],
+            'Test picture generator': [['videotestsrc', None, {'is-live': True}]],
+            'Webcam': [['v4l2src', None, {}]]
+        }
+        a_input_list = {
+            'Decklink-Card': [
+                ['decklinkaudiosrc', None,
+                 {'device-number': device, 'connection': 'embedded', 'channels': Settings.audio_channels_from_sdi,
+                  'do-timestamp': True}]
+            ],
+            'Test sound generator': [
+                ['audiotestsrc', None, {'is-live': True, 'do-timestamp': True, 'wave': 'pink-noise', 'volume': 0.03}]
+                # , '!', 'audio/x-raw,channels=8'
+            ]
+        }
+        return v_input_list, a_input_list
+
+    def define(self):
+        """
+        function to interactiveley select the audio and videosource from the defined settings in class PossibleInputs
+        """
+
+        params = self.list(self, 1)
+        # print (params)
+        v_parameter = params[0]
+        possible_v_inputs = []
+        for option in v_parameter.items():
+            possible_v_inputs.append(option[0])
+        # print("Possible Inputs: %s" % possible_v_inputs)
+        in_v_choice = SelectThe.input("Video Input", possible_v_inputs, v_parameter)
+        # print(in_v_choice)
+        a_parameter = params[1]
+        possible_a_inputs = []
+        for option in a_parameter.items():
+            possible_a_inputs.append(option[0])
+        # print("Possible Inputs: %s" % possible_v_inputs)
+        in_a_choice = SelectThe.input("Audio Input", possible_a_inputs, a_parameter)
+        # print(in_a_choice)
+        # return in_v_choice, in_a_choice
+        Settings.video_in_name = in_v_choice
+        Settings.audio_in_name = in_a_choice
+
+    def generate(self, v_inputchoice, a_inputchoice, device):
+        """
+        Function to generate the dynamic input patterns
+        """
+
+        v_parameter = self.list(device)[0]
+        a_parameter = self.list(device)[1]
+        v_in = v_parameter[v_inputchoice][0]
+        a_in = a_parameter[a_inputchoice][0]
+        # print("Video in: %s" % v_in)
+        return v_in, a_in

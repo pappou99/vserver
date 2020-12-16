@@ -21,11 +21,15 @@
 
 import paho.mqtt.client as mqtt
 from threading import Thread
+import time
+import json
+
 from vServer_settings import Settings
-from vserver.stream import Stream
+# from vserver.stream import Stream
 from vserver.remote import Remote
 
-class MqttCommands():
+
+class MqttCommands:
     """Class MqttCommands
     Settings for remote control commands to react to, when received the right topic
     """
@@ -33,38 +37,30 @@ class MqttCommands():
     play = b'play'
     stop = b'stop'
 
-class MqttRemote(Thread):
-    """Class MqttRemote
-    Enables MQTT remote support
-    Topics to react to and server connection settings to are configured in the vServer_settings.py
-    """
 
-    def __init__(self, sub_topic, host=Settings.mqtt_server, port=Settings.mqtt_port, base_topic=Settings.mqtt_topic):
-        super().__init__(name='mqtt')
-        self.host = host
-        self.port = port
+class Mqtt(Thread):
+    def __init__(self, name):
+        self.host = Settings.mqtt_server
+        self.port = Settings.mqtt_port
 
-        ###Building the topic we want to subscribe
-        self.topic = []
-        self.topic.extend(base_topic)
-        self.topic.append(sub_topic)
-        # print(self.topic)
-        self.topic_str = "/".join(self.topic)
+        # Building the topic we want to subscribe
+        self.my_base_topic = Settings.mqtt_topic.copy()
+        # self.my_base_topic.append(topic)
+
+        self.my_status_topic = self.my_base_topic.copy()
+        self.my_status_topic.extend(Settings.mqtt_topic_for_status)
+        self.my_status_topic.append(name)
+        self.my_status_topic_str = '/'.join(self.my_status_topic)
 
         self.client = mqtt.Client()
         self.client.username_pw_set(Settings.mqtt_user, Settings.mqtt_pass)
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-        self.client.on_publish = self.on_publish
-        self.client.on_subscribed = self.on_subscribed
 
     def run(self):
         """Function to run the MQTT-Client
         """
-        print('MQTT: Connecting to server at %s:%s' % (self.host, self.port))
+        print('MQTT(%s): Connecting to server at %s:%s' % (self.name, self.host, self.port))
         self.client.connect(self.host, self.port, 60)
-        # status = self.client.connect(self.host, self.port, 60)
-        # print("Status of MQTT-Server: %s" % status)
+        self.client.publish('%s' % (self.my_status_topic_str), 'init')
         self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
@@ -74,27 +70,64 @@ class MqttRemote(Thread):
 
         if rc == 0:
             self.client.subscribe(self.topic_str)
-            print('MQTT: Successfully connected to %s at port %s\nMQTT: Listening to topic: %s' % (self.host, self.port, self.topic_str))
-            # print("MQTT: Connected to MQTT-Server at {0} with result code {1}".format(self.host, rc))
+            print('MQTT(%s): Successfully connected to %s at port %s\nMQTT: Listening to topic: %s' % (
+                self.name, self.host, self.port, self.topic_str))
+            # print('MQTT: Connected to MQTT-Server at {0} with result code {1}'.format(self.host, rc))
         else:
-            print('MQTT: Bad connection, returned code: %s' % rc)
+            print('MQTT(%s): Bad connection, returned code: %s' % (self.name, rc))
+
+    def on_publish(self, client, userdata, msg):
+        print('----------published')
+        pass
+
+    def on_subscribed(self, client, userdata, msg):
+        print('----------subscribed')
+        pass
+
+
+class MqttRemote(Mqtt):
+    """Class MqttRemote
+    Enables MQTT remote support
+    Topics to react to and server connection settings to are configured in the vServer_settings.py
+    """
+
+    def __init__(self, name='mqtt_remote'):
+        Mqtt.__init__(self, name=name)
+        Thread.__init__(self, name='mqtt_remote')
+
+        self.my_topic = self.my_base_topic.copy()
+        self.my_topic.extend(Settings.mqtt_topic_for_remote)
+        self.topic_str = "/".join(self.my_topic)
+
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.on_publish = self.on_publish
+        self.client.on_subscribed = self.on_subscribed
+
+    def run(self):
+        """Function to run the MQTT-Client
+        """
+        print('MQTT(%s): Connecting to server at %s:%s' % (self.name, self.host, self.port))
+        self.client.connect(self.host, self.port, 60)
+        self.client.publish('%s' % (self.my_status_topic_str), 'init')
+        self.client.loop_forever()
 
     def on_message(self, client, userdata, msg):
         """
         Callback function when a message is received.
         """
-        
-        print("\nMQTT: Message received on topic: %s | message: %s" % (msg.topic, msg.payload))
+
+        print('MQTT(%s): Message received on topic: %s | message: %s' % (self.name, msg.topic, msg.payload))
         topics = msg.topic.split("/")
         # print(topics)
         video_no = int(topics[-3])
         audio_no = int(topics[-1])
-        remote = Remote()#TODO wieso? -> Thread
+        remote = Remote()  # TODO wieso? -> Thread
         if msg.payload == ('' or b''):
-            print('MQTT: No payload was submitted! Don\'t know what to do!')
+            print('MQTT(%s): No payload was submitted! Don\'t know what to do!')
         elif msg.payload == MqttCommands.play:
             # print(Settings.streams[video_no].__dict__)
-            print('MQTT: Received play command for stream %s with audio %s' % (video_no, audio_no))#
+            print('MQTT(%s): Received play command for stream %s with audio %s' % (self.name, video_no, audio_no))  #
             remote.play(video_no, audio_no)
             # # print(Settings.streams)
             # if Settings.streams[video_no] == None:
@@ -107,15 +140,34 @@ class MqttRemote(Thread):
             # Settings.streams[video_no].audio_in_stream = audio_no
             # Settings.streams[video_no].start()
         elif msg.payload == MqttCommands.stop:
-            print('MQTT: Received stop command for stream %s' % video_no)
+            print('MQTT(%s): Received stop command for stream %s' % (self.name, video_no))
             remote.stop(video_no)
             # if Settings.streams[video_no] != None:
             #     print('MQTT: Stopping video %s\n' % video_no)
             #     Settings.streams[video_no].stop()
             #     print(Settings.streams)
 
-    def on_publish(self, client, userdata, msg):
+
+class MqttPublisher(Mqtt):
+    def __init__(self, streamnumber):
+        self.streamnumber = streamnumber
+        name = Settings.streams[streamnumber].devicename
+        Thread.__init__(self, name='mqtt_%s' % name)
+        Mqtt.__init__(self, name=name)
         pass
 
-    def on_subscribed(self, client, userdata, msg):
-        pass
+    def run(self):
+        """Function to run the MQTT-Client
+        """
+        print('MQTT(%s): Connecting to server at %s:%s' % (self.name, self.host, self.port))
+        self.client.connect(self.host, self.port, 60)
+        self.client.publish('%s' % self.my_status_topic_str, 'init')
+        self.client.loop()
+        while True:
+            now = time.strftime('%Y%m%d %H%M%S')
+            src = Settings.streams[self.streamnumber]
+            states = {'Timestamp': now, 'Status': src.pipe_status_str, 'Streamnumber': src.streamnumber,
+                      'Port:Audio': src.a_port, 'Port:Video': src.v_port, 'Audio -> Stream': src.audio_to_stream,
+                      }
+            self.client.publish(self.my_status_topic_str, '%s' % json.dumps(states, indent=4))
+            time.sleep(Settings.mqtt_status_interval)
