@@ -58,6 +58,7 @@ class Stream:
         self.audio_counter = 0
         # self.me = Settings.streams[streamnumber]
         self.pipe_status = Gst.State.NULL
+        self.pipe_status_str = Gst.Element.state_get_name(self.pipe_status)
 
         self._elements = []
 
@@ -83,7 +84,7 @@ class Stream:
 
         # register functions that GLib will call repeatedly
         GLib.timeout_add_seconds(1, self.refresh_ui)
-        GLib.timeout_add_seconds(5, self.publish_status)
+        # GLib.timeout_add_seconds(5, self.publish_status)
 
         # instruct the bus to emit signals for each received message
         # and connect to the interesting signals
@@ -471,9 +472,10 @@ class Stream:
             return
 
         self.pipe_status = new
+        self.pipe_status_str = Gst.Element.state_get_name(new)
         print("%s: State changed from %s to %s" % (self.devicename,
                                                    Gst.Element.state_get_name(old),
-                                                   Gst.Element.state_get_name(new)))
+                                                   self.pipe_status_str))
 
         if old == Gst.State.READY and new == Gst.State.PAUSED:
             # for extra responsiveness we refresh the GUI as soons as
@@ -655,10 +657,10 @@ class Stream:
             sdp_file.write('\r\n'.join(sdp))
         print('STREAM: SDP-file written to %s' % filename)
 
-    def publish_status(self):
-        self.mqtt_publisher = Settings.mqtt_elements[self.streamnumber]
-        print('-------------------- publish status')
-        self.mqtt_publisher.client.publish('%s' % self.mqtt_publisher.my_status_topic_str, 'das ist ein Test')
+    # def publish_status(self):
+    #     self.mqtt_publisher = Settings.mqtt_elements[self.streamnumber]
+    #     print('-------------------- publish status')
+    #     self.mqtt_publisher.client.publish('%s' % self.mqtt_publisher.my_status_topic_str, 'das ist ein Test')
 
 
 if __name__ == '__main__':

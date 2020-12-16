@@ -84,6 +84,7 @@ class Settings:
     mqtt_topic_for_status = ['status']
     mqtt_user = Secrets.mqtt_user
     mqtt_pass = Secrets.mqtt_pass
+    mqtt_status_interval = 5
     mqtt_elements = []
 
     ### Ui

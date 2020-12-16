@@ -132,7 +132,7 @@ class Main:
             # me = Stream(streamnumber)
             stream.prepare(Settings.video_in_name, Settings.audio_in_name)
 
-            mqtt_publisher = MqttPublisher(stream.devicename)
+            mqtt_publisher = MqttPublisher(streamnumber)
             Settings.mqtt_elements.append(mqtt_publisher)
             mqtt_publisher.start()
 

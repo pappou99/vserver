@@ -21,6 +21,9 @@
 
 import paho.mqtt.client as mqtt
 from threading import Thread
+import time
+import json
+
 from vServer_settings import Settings
 # from vserver.stream import Stream
 from vserver.remote import Remote
@@ -57,8 +60,6 @@ class Mqtt(Thread):
         """
         print('MQTT(%s): Connecting to server at %s:%s' % (self.name, self.host, self.port))
         self.client.connect(self.host, self.port, 60)
-        # status = self.client.connect(self.host, self.port, 60)
-        # print("Status of MQTT-Server: %s" % status)
         self.client.publish('%s' % (self.my_status_topic_str), 'init')
         self.client.loop_forever()
 
@@ -103,6 +104,14 @@ class MqttRemote(Mqtt):
         self.client.on_publish = self.on_publish
         self.client.on_subscribed = self.on_subscribed
 
+    def run(self):
+        """Function to run the MQTT-Client
+        """
+        print('MQTT(%s): Connecting to server at %s:%s' % (self.name, self.host, self.port))
+        self.client.connect(self.host, self.port, 60)
+        self.client.publish('%s' % (self.my_status_topic_str), 'init')
+        self.client.loop_forever()
+
     def on_message(self, client, userdata, msg):
         """
         Callback function when a message is received.
@@ -140,7 +149,25 @@ class MqttRemote(Mqtt):
 
 
 class MqttPublisher(Mqtt):
-    def __init__(self, name):
+    def __init__(self, streamnumber):
+        self.streamnumber = streamnumber
+        name = Settings.streams[streamnumber].devicename
         Thread.__init__(self, name='mqtt_%s' % name)
         Mqtt.__init__(self, name=name)
         pass
+
+    def run(self):
+        """Function to run the MQTT-Client
+        """
+        print('MQTT(%s): Connecting to server at %s:%s' % (self.name, self.host, self.port))
+        self.client.connect(self.host, self.port, 60)
+        self.client.publish('%s' % self.my_status_topic_str, 'init')
+        self.client.loop()
+        while True:
+            now = time.strftime('%Y%m%d %H%M%S')
+            src = Settings.streams[self.streamnumber]
+            states = {'Timestamp': now, 'Status': src.pipe_status_str, 'Streamnumber': src.streamnumber,
+                      'Port:Audio': src.a_port, 'Port:Video': src.v_port, 'Audio -> Stream': src.audio_to_stream,
+                      }
+            self.client.publish(self.my_status_topic_str, '%s' % json.dumps(states, indent=4))
+            time.sleep(Settings.mqtt_status_interval)
