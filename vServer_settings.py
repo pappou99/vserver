@@ -79,9 +79,12 @@ class Settings:
     mqtt_server = '10.82.209.45'
     if development == True: mqtt_server = 'localhost'
     mqtt_port = 1883
-    mqtt_topic = ['gvg-grp', maschinename, 'video']
+    mqtt_topic = ['gvg-grp', maschinename]
+    mqtt_topic_for_remote = ['video', '#']
+    mqtt_topic_for_status = ['status']
     mqtt_user = Secrets.mqtt_user
     mqtt_pass = Secrets.mqtt_pass
+    mqtt_elements = []
 
     ### Ui
     ui_elements = [None]
