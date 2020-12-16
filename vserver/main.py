@@ -45,7 +45,7 @@ from vServer_settings import Settings
 from vserver.benchmark import Benchmark
 from vserver.ui import ui
 
-timeout = 5
+timeout = 1
 
 
 def make_directories(directory_list):
@@ -122,24 +122,22 @@ class Main:
         # create streams
         print("MAIN: Creating streams\n")
         for streamnumber in range(1, Settings.num_streams + 1, 1):
-            Settings.streams.append(dict())
-            me = Settings.streams[streamnumber]
-            me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
-            status = me['status']
-            # me['status'] = status = me['stream'].pipeline.get_state(5)
-            # me['statusname'] = Gst.Element.state_get_name(status)
+            Settings.streams.append(None)
+            stream = Settings.streams[streamnumber] = Stream(streamnumber)
+            me = Stream(streamnumber)
+            me.prepare(Settings.video_in_name, Settings.audio_in_name)
 
-        # if Settings.instant_play == True:
-        #     Settings.streams[streamnumber].start()# instantly play video for testing
+        if Settings.instant_play:
+            stream.start()# instantly play video for testing
 
         # enable MQTT-remote support
         mqtt_client = mqtt.MqttRemote(sub_topic='#')
         mqtt_client.start()
 
         # ### create gui ###
-        Settings.ui = ui.Ui()
-        Settings.ui.connect("destroy", Gtk.main_quit)
-        Settings.ui.show_all()
+        gui = Settings.ui_elements[0] = ui.Ui()
+        gui.connect("destroy", Gtk.main_quit)
+        gui.show_all()
         Gtk.main()
 
 

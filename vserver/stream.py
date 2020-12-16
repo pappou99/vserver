@@ -29,20 +29,15 @@ from vserver.jackconnect import Jacking
 
 class Stream:
 
-    def __init__(self, streamnumber, video_in_name, audio_in_name):
-
+    def __init__(self, streamnumber):
+        Settings.streams[streamnumber] = self
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
         self.devicename = 'Video %s' % self.streamnumber
+        self.active = None
 
         # initialize GStreamer
         Gst.init(sys.argv)
-        GObject.threads_init()
-        self.jackaudio = Jacking(self.devicename)
-        self.loop = GLib.MainLoop()
-
-        # register a function that GLib will call every second
-        GLib.timeout_add_seconds(1, self.refresh_ui)
 
         if Settings.debug:
             Gst.debug_set_active(True)
@@ -57,21 +52,13 @@ class Stream:
         self.port = Settings.startport + self.stream_id
         self.v_port = Settings.startport + self.stream_id * 8
         self.a_port = self.v_port + 2
-        self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber) # RTP Setting
-        self.audio_to_stream = 1
+        self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber)  # RTP Setting
+        self.audio_to_stream = Settings.default_audio_to_stream
         self.audio_counter = 0
-        self.me = Settings.streams[streamnumber]
-        self.pipe_status = self.me['status'] = Gst.State.NULL
+        # self.me = Settings.streams[streamnumber]
+        self.pipe_status = Gst.State.NULL
 
         self._elements = []
-        self.sdp_params = []
-
-        self.pipeline = Gst.Pipeline()
-        if not self.pipeline:
-            print("ERROR: Could not create playbin.")
-            sys.exit(1)
-        Gst.debug_add_log_function(self.on_debug, self.pipeline)  # Callback for detailed logging
-        # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
 
         # # set up URI
         # self.malm([
@@ -79,6 +66,21 @@ class Stream:
         #     "uri" : "http://ftp.halifax.rwth-aachen.de/blender/demo/movies/Sintel.2010.1080p.mkv"
         #     }]
         # ])
+
+    def prepare(self, video_in_name, audio_in_name):
+        GObject.threads_init()
+        self.sdp_params = []
+        self.pipeline = Gst.Pipeline()
+        if not self.pipeline:
+            print("ERROR: Could not create playbin.")
+            sys.exit(1)
+        Gst.debug_add_log_function(self.on_debug, self.pipeline)  # Callback for detailed logging
+        # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
+
+        self.jackaudio = Jacking(self.devicename)
+        self.loop = GLib.MainLoop()
+        # register a function that GLib will call every second
+        GLib.timeout_add_seconds(1, self.refresh_ui)
 
         # instruct the bus to emit signals for each received message
         # and connect to the interesting signals
@@ -180,7 +182,7 @@ class Stream:
 
         self.write_dotfile(self.streamnumber, 'malm')
 
-        self.thread = self.me['thread'] = Thread(target=self.play, name=self.devicename)
+        self.thread = Thread(target=self.play, name=self.devicename)
         self.sdp = Thread(target=self.createsdp, args=[self.sdp_params], name='SDP-generator')
 
         self.pipeline.set_state(Gst.State.READY)
@@ -193,6 +195,7 @@ class Stream:
         # print('f1 %s' % source_pad, sink_pad)
         source_pad.link(sink_pad)
         return
+
     # def create_and_link_gstbin_source_pads(self, source, sink):
     #     # todo wie zuvor, nur gedreht
     #     source_templates = source.get_pad_template_list()
@@ -210,7 +213,7 @@ class Stream:
     # set the playbin to PLAYING (start playback), register refresh callback
     # and start the GTK main loop
     def play(self):
-        self.audio_to_stream = self.me['audio_to_stream']
+        # self.audio_to_stream = self.me['audio_to_stream']
         try:
             # start playing
             ret = self.pipeline.set_state(Gst.State.PAUSED)
@@ -226,13 +229,12 @@ class Stream:
             if ret == Gst.StateChangeReturn.FAILURE:
                 print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
                 sys.exit(1)
-
+            self.active = True
             self.write_dotfile(self.streamnumber, 'play')
 
             self.jackaudio.connect(self.streamnumber, self.devicename)
 
             self.sdp.start()
-
 
             self.loop.run()
         finally:
@@ -250,7 +252,8 @@ class Stream:
 
     def stop(self):
         self.pipeline.set_state(Gst.State.READY)
-        self.me['status'] = self.get_pipeline_status()
+        self.pipe_status = self.get_pipeline_status()
+        self.active = False
         self.loop.quit()
         self.refresh_ui()
         pass
@@ -259,13 +262,13 @@ class Stream:
     def cleanup(self):
         if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
-            self.me['status'] = self.get_pipeline_status()
+            self.pipe_status = self.get_pipeline_status()
             # time.sleep(5)
             self.bus.remove_signal_watch()
-            self.pipeline = None
+            # self.pipeline = None
             # self.me['status'] = None
             # self.me['stream'] = None
-            self.me['thread'] = None
+            self.thread = None
 
     def get_pipeline_status(self):
         ret = self.pipeline.get_state(5)
@@ -278,7 +281,7 @@ class Stream:
         else:
             if videonumber == 1:
                 filename = '%s/Dot_Video%d_after_play_%s_%s.dot' % (
-                        Settings.dotfile_location, videonumber, Settings.v_enc[0], Settings.a_enc[0])
+                    Settings.dotfile_location, videonumber, Settings.v_enc[0], Settings.a_enc[0])
         if Settings.debug or videonumber == 1:
             with open(filename, 'w') as dot_file:
                 dot_file.write(Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails(-1)))
@@ -426,10 +429,13 @@ class Stream:
 
         # we do not want to update anything unless we are in the PAUSED
         # or PLAYING states
-        if self.pipe_status < Gst.State.PAUSED:
-            gui['status'].set_label('%s' % Gst.Element.state_get_name(self.me['status']))
-            gui['audio_streaming'].set_label('%s' % self.audio_to_stream)
-            return True
+        state = Gst.Element.state_get_name(self.pipe_status)
+        audio = self.audio_to_stream
+        # print('Setting Label %s and %s for Stream %s' %(state, audio, self.streamnumber))
+        # print(state)
+        gui['status'].set_label('%s' % state)
+        gui['audio_streaming'].set_label('%s' % audio)
+        return True  # todo wieso?
 
     # this function is called when new metadata is discovered in the stream
     def on_tags_changed(self, playbin, stream):
@@ -461,16 +467,15 @@ class Stream:
             # not from the playbin, ignore
             return
 
-        self.me['status'] = new
-        print("%s: State changed from %s to %s" % (
-            self.devicename, Gst.Element.state_get_name(old), Gst.Element.state_get_name(new)
-        )
-              )
+        self.pipe_status = new
+        print("%s: State changed from %s to %s" % (self.devicename,
+                                                   Gst.Element.state_get_name(old),
+                                                   Gst.Element.state_get_name(new)))
 
         if old == Gst.State.READY and new == Gst.State.PAUSED:
             # for extra responsiveness we refresh the GUI as soons as
             # we reach the PAUSED state
-            # self.refresh_ui()
+            self.refresh_ui()
             pass
 
     # extract metadata from all the streams and write it to the text widget
@@ -581,7 +586,8 @@ class Stream:
         print('RtpBin Caps: %s' % caps)
         if caps:
             # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps))
-            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))', str(caps))
+            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))',
+                                    str(caps))
 
             # if 'media=(string)audio' in parameters[0]:
             #     prefix = 'audio_'
@@ -645,6 +651,7 @@ class Stream:
         with open(filename, 'w') as sdp_file:
             sdp_file.write('\r\n'.join(sdp))
         print('STREAM: SDP-file written to %s' % filename)
+
 
 if __name__ == '__main__':
     p = Stream(1, Settings.video_in_name, Settings.audio_in_name)

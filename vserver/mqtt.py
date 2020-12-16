@@ -84,7 +84,7 @@ class MqttRemote(Thread):
         Callback function when a message is received.
         """
         
-        print("\nMQTT: Message received on topic: %s | message: %s" % (msg.topic, msg.payload))
+        print("MQTT: Message received on topic: %s | message: %s" % (msg.topic, msg.payload))
         topics = msg.topic.split("/")
         # print(topics)
         video_no = int(topics[-3])

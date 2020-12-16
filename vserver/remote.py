@@ -33,30 +33,38 @@ class Remote:
 
     def play(self, streamnumber, audio_no):
         me = Settings.streams[streamnumber]
-        me['active'] = True
         # Settings.streams[streamnumber]['stream'] = Player()
-        if Settings.streams[streamnumber]['status'] is Gst.State.NULL:
+        if me.active:
+            if me.audio_to_stream == audio_no:
+                print('REMOTE: Stream %s already started with audio %s; nothing to do' % (streamnumber, audio_no))
+            else:
+                print('REMOTE: Stream %s already playing; reconnect audio to %s' % (streamnumber, audio_no))
+                self.reconnect_audio(audio_no)
+        else:
             print('REMOTE: Preparing videostream %s with audiotrack %s' % (streamnumber, audio_no))
-            me['stream'] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
-        # elif Settings.streams[streamnumber] != 'PAUSED':# TODO: Untested
-        #     print('REMOTE: First stopping the videostream %s\n' % streamnumber)# TODO: Untested
-        #     Settings.streams[streamnumber].stop()# TODO: Untested
-        #     Settings.streams[streamnumber] = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)# TODO: Untested
-        me['audio_to_stream'] = audio_no
-        # Settings.streams[streamnumber]['thread'].start()
-        me['stream'].thread.start()
-        # Settings.streams[streamnumber]['stream'].start()
+            # me = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
+            me = Stream(streamnumber)
+            me.prepare(Settings.video_in_name, Settings.audio_in_name)
+            me.audio_to_stream = audio_no
+            me.thread.start()
 
     def stop(self, streamnumber):
         me = Settings.streams[streamnumber]
-        me['active'] = False
-        if me['stream'] != None:
+        if not me.active:
+            print('REMOTE: Stream %s already stopped; nothing to do' % streamnumber)
+            return
+        if me is not None:
             print('REMOTE: Stopping video %s\n' % streamnumber)
-            me['stream'].stop()
-            me['thread'].join()
-            me['stream'].cleanup()
+            me.stop()
+            me.thread.join()
+            # me.cleanup()
+            # me = None
             for i in Settings.streams:
                 print(i)
                 return
         else:
             print('Video was already stopped. Nothing to do!')
+
+    def reconnect_audio(self, audio_no):
+        # todo: bla bal
+        pass
