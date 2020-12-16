@@ -36,7 +36,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gst", "1.0")
 from gi.repository import Gtk
-from gi.repository import Gst
+# from gi.repository import Gst
 
 from vserver.mqtt import MqttRemote, MqttPublisher
 from vserver.choice import SelectThe
@@ -129,17 +129,17 @@ class Main:
         for streamnumber in range(1, Settings.num_streams + 1, 1):
             Settings.streams.append(None)
             Settings.streams[streamnumber] = stream = Stream(streamnumber)
-            # me = Stream(streamnumber)
             stream.prepare(Settings.video_in_name, Settings.audio_in_name)
 
             mqtt_publisher = MqttPublisher(streamnumber)
             Settings.mqtt_elements.append(mqtt_publisher)
             mqtt_publisher.start()
 
+        # instantly play video for testing or headless operation without remote
         if Settings.instant_play:
-            stream.start()# instantly play video for testing
+            stream.start()
 
-        # ### create gui ###
+        # create gui
         gui = Settings.ui_elements[0] = ui.Ui()
         gui.connect("destroy", Gtk.main_quit)
         gui.show_all()

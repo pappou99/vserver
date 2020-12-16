@@ -18,10 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import gi
 
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst
 
 from vServer_settings import Settings
 from vserver.stream import Stream
@@ -33,7 +30,6 @@ class Remote:
 
     def play(self, streamnumber, audio_no):
         me = Settings.streams[streamnumber]
-        # Settings.streams[streamnumber]['stream'] = Player()
         if me.active:
             if me.audio_to_stream == audio_no:
                 print('REMOTE: Stream %s already started with audio %s; nothing to do' % (streamnumber, audio_no))
@@ -42,7 +38,6 @@ class Remote:
                 self.reconnect_audio(audio_no)
         else:
             print('REMOTE: Preparing videostream %s with audiotrack %s' % (streamnumber, audio_no))
-            # me = Stream(streamnumber, Settings.video_in_name, Settings.audio_in_name)
             me = Stream(streamnumber)
             me.prepare(Settings.video_in_name, Settings.audio_in_name)
             me.audio_to_stream = audio_no
@@ -57,8 +52,6 @@ class Remote:
             print('REMOTE: Stopping video %s\n' % streamnumber)
             me.stop()
             me.thread.join()
-            # me.cleanup()
-            # me = None
             for i in Settings.streams:
                 print(i)
                 return

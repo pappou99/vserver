@@ -48,7 +48,7 @@ class Ui(threading.Thread, Gtk.Window):
         # label_label = Gtk.Label(label="Videoname -->")
         # button_label = Gtk.Label(label='Control Button -->')
         # status_label = Gtk.Label(label="Status -->")
-        
+
         # index_box.pack_start(label_label, False, False, 5)
         # index_box.pack_start(button_label, False, False, 5)
         # index_box.pack_start(status_label, False, False, 5)
@@ -104,11 +104,5 @@ class Ui(threading.Thread, Gtk.Window):
         if switch.get_active():
             audiotrack = Settings.ui_elements[streamnumber]['select_audio'].get_value_as_int()
             Remote.play(None, streamnumber, audiotrack)
-            # Settings.ui_elements[streamnumber]['button'].set_label('Stop (%s)' % streamnumber)
         else:
             Remote.stop(None, streamnumber)
-
-    # def on_spin_but_val_changed(self, spin_button, streamnumber):
-    #     value = spin_button.get_value_as_int()
-    #     print(value, streamnumber)
-    #     # Settings.streams[spin_button.stream]['audio_to_stream'] = value
