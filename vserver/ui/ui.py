@@ -115,7 +115,6 @@ class Ui(threading.Thread, Gtk.Window):
         return audiotrack
 
     def reconnect_audio_click(self, gparam, streamnumber):
-        print('Stream %s, Audio%s' % (streamnumber, self.get_selected_audio(streamnumber)))
         audiotrack = self.get_selected_audio(streamnumber)
         self.remote.play(streamnumber, audiotrack)
         pass
