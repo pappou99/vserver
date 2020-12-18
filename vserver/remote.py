@@ -35,7 +35,7 @@ class Remote:
                 print('REMOTE: Stream %s already started with audio %s; nothing to do' % (streamnumber, audio_no))
             else:
                 print('REMOTE: Stream %s already playing; reconnect audio to %s' % (streamnumber, audio_no))
-                self.reconnect_audio(audio_no)
+                self.reconnect_audio(streamnumber, audio_no)
         else:
             print('REMOTE: Preparing videostream %s with audiotrack %s' % (streamnumber, audio_no))
             me = Stream(streamnumber)
@@ -58,6 +58,9 @@ class Remote:
         else:
             print('Video was already stopped. Nothing to do!')
 
-    def reconnect_audio(self, audio_no):
-        # todo: bla bal
+    def reconnect_audio(self, streamnumber, audio_no):
+        me = Settings.streams[streamnumber]
+        me.audio_to_stream = audio_no
+        me.disconnect_stream()
+        me.connect_stream()
         pass

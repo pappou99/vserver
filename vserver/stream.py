@@ -221,6 +221,13 @@ class Stream:
         # stream_muxer = self.pipeline.get_by_name('muxer')
         # audio_stream.link_pads('src', stream_muxer, None)
         time.sleep(1)
+        self.write_dotfile(self.streamnumber, 'play')
+
+    def disconnect_stream(self):
+        deint = self.pipeline.get_by_name('deinterleaver')
+        follower = self.pipeline.get_by_name('d_follower')
+        deint.unlink(follower)
+
 
     def stop(self):
         self.pipeline.set_state(Gst.State.READY)
