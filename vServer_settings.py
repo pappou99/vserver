@@ -25,8 +25,11 @@ from vserver.codec_options import PossibleInputs
 
 class Settings:
     debug = True
+
     logfile_location = './logs'  # directory without following slash
     logfile = ''  # if this is empty a name will be generated (format YYYYMMDD HHMM.log)
+    write_logfile = False
+
     # Advanced logging like benchmark, dot-file etc...
     benchmark_location = '%s/benchmark' % logfile_location
     dotfile_location = '%s/dot' % logfile_location
