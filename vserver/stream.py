@@ -65,8 +65,9 @@ class Stream:
         if not self.pipeline:
             print("ERROR: Could not create playbin.")
             sys.exit(1)
-        Gst.debug_add_log_function(self.on_debug, self.pipeline)  # Callback for detailed logging
-        # Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
+        if Settings.write_logfile:
+            Gst.debug_add_log_function(self.on_debug, self.pipeline)  # Callback for detailed logging
+            Gst.debug_remove_log_function(Gst.debug_log_default)  # TODO Bauchen wird die noch?
 
         self.jackaudio = Jacking(self.devicename)
         self.loop = GLib.MainLoop()
