@@ -28,7 +28,7 @@ class Settings:
 
     logfile_location = './logs'  # directory without following slash
     logfile = ''  # if this is empty a name will be generated (format YYYYMMDD HHMM.log)
-    write_logfile = False
+    write_logfile = True
 
     # Advanced logging like benchmark, dot-file etc...
     benchmark_location = '%s/benchmark' % logfile_location

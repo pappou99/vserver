@@ -24,6 +24,7 @@ from vserver.jackconnect import Jacking
 class Stream:
 
     def __init__(self, streamnumber):
+        debug_level = Gst.DebugLevel.INFO  # Possible levels: None ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
         Settings.streams[streamnumber] = self
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
@@ -37,8 +38,7 @@ class Stream:
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(
-                    Gst.DebugLevel.FIXME)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+                Gst.debug_set_default_threshold(debug_level)
 
         self.port = Settings.startport + self.stream_id
         self.v_port = Settings.startport + self.stream_id * 8
@@ -497,8 +497,11 @@ class Stream:
 
     def on_debug(self, category, level, dfile, dfctn, dline, source, message, user_data):
         if source:
+            sourcename = ''
             if 'Gst.Pad' in str(source):
-                sourcename = 'Pad of %s' % source.get_parent().name
+                # parent = source.get_parent() # causes a crash if log level > INFO
+                # sourcename = 'Pad of %s' % source.get_parent().name
+                pass
             else:
                 sourcename = source.name
             string = '%s\t%s\t%s\t%s\n' % (self.devicename, Gst.DebugLevel.get_name(level), sourcename, message.get())
