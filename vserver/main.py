@@ -121,7 +121,7 @@ class Main:
 
         # enable MQTT-remote support
         mqtt_remote = MqttRemote()
-        Settings.mqtt_elements.append(mqtt_remote)
+        Settings.mqtt_elements.append(mqtt_remote) # todo wieso?
         mqtt_remote.start()
 
         # create streams
