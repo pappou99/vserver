@@ -217,10 +217,7 @@ class Stream:
     def connect_stream(self):
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
-        deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
-        audio_stream = self.pipeline.get_by_name('a_enc')
-        # stream_muxer = self.pipeline.get_by_name('muxer')
-        # audio_stream.link_pads('src', stream_muxer, None)
+        ret = deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
         time.sleep(1)
         self.write_dotfile(self.streamnumber, 'play')
 
