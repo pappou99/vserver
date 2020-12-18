@@ -199,7 +199,9 @@ class Stream:
             if ret == Gst.StateChangeReturn.FAILURE:
                 print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
                 sys.exit(1)
-            self.active = True
+
+            self.switch_to_active(True)
+
             self.write_dotfile(self.streamnumber, 'play')
 
             self.jackaudio.connect(self.streamnumber, self.devicename)
@@ -223,7 +225,7 @@ class Stream:
     def stop(self):
         self.pipeline.set_state(Gst.State.READY)
         self.pipe_status = self.get_pipeline_status()
-        self.active = False
+        self.switch_to_active(False)
         self.loop.quit()
         self.refresh_ui()
         pass
@@ -305,7 +307,11 @@ class Stream:
             prev_name = current_name
             prev_gst_name = element.get_name()
 
-        # CALLBACK-FUNCTIONS
+    def switch_to_active(self, state):
+        self.active = state
+        Settings.ui_elements[self.streamnumber]['switch'].set_active(state)
+
+    # CALLBACK-FUNCTIONS
 
     def test(self, *args):
         print('-------------------------- %s' % args)
