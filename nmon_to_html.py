@@ -26,14 +26,17 @@ Change the settings to point to where your binaries and nmon-log files are.
 """
 
 import os
-import http
+from vServer_settings import Settings
 
-basefolder = './benchmark/'
+basefolder = Settings.benchmark_location
+bin_folder = './bin_helper'
 
-nmonchartbin = '%snmonchart/nmonchart' % basefolder
-nmonfolder = '%slogging/' % basefolder
+nmonchartbin = '%s/nmonchart' % bin_folder
+nmonfolder = basefolder
 files = os.listdir(nmonfolder)
-outfolder = '%shtml' % basefolder
+outfolder = '%s/html_charts' % basefolder
+if not os.path.exists(outfolder):
+    os.makedirs(outfolder)
 
 for root, dirs, files in os.walk(os.path.abspath(nmonfolder)):
     for f in files:

@@ -20,35 +20,75 @@
 #
 
 from vServer_secrets import Secrets
+from vserver.codec_options import PossibleInputs
+
 
 class Settings:
-    hostname = ''
+    debug = True
 
-    stream_ip = '239.230.225.255'
-    startport = 5001
+    logfile_location = './logs'  # directory without following slash
+    logfile = ''  # if this is empty a name will be generated (format YYYYMMDD HHMM.log)
+    write_logfile = False
+
+    # Advanced logging like benchmark, dot-file etc...
+    benchmark_location = '%s/benchmark' % logfile_location
+    dotfile_location = '%s/dot' % logfile_location
+    sdp_file_location = './sdp'
+    development = True  # change to true, if you dont have the required hardware (audio- videotestsrc)
+    instant_play = False
+
+    interactive = True
+    possible_codecs = PossibleInputs.container_list['rtp']
+
+    maschinename = 'videoserver1'
+    hostname = ''  # will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
+
+    stream_ip = '239.230.225.255'# multicast Address
+    # stream_ip = '10.82.109.41'  # rtmp server address
+    # if development == True: stream_ip = '10.19.77.42'  # rtmp server address
+    startport = 5000
     speed_preset = 3
     amplification = 4
 
-    video_in_name = 'Decklink-Card' ## must be written like in possible inputs
-    audio_in_name = 'Decklink-Card' # must be written like in possible inputs
-    videowidth = '1920'
-    videoheight = '1080'
-    
-    muxer = ['mpegtsmux', {'alignment': 7}]
-    payloader = ['rtpmp2tpay', {}]
-    v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}]
-    a_enc = ['opusenc', {}, 'opusparse', {}]
-    num_streams = 8
-    
+    video_in_name = 'Decklink-Card'  # must be exactly written like in codec_options.py
+    if development: video_in_name = 'Test picture generator'  # must be exactly written like in codec_options.py
+    audio_in_name = 'Decklink-Card'  # must be exactly written like in codec_options.py
+    # video_in_name = 'Webcam' ## must be exactly written like in vServer.choice.py class PossibleInputs
+    if development: audio_in_name = 'Test sound generator'  # must be exactly written like in codec_options.py
+    videowidth = '1280'
+    videoheight = '720'
+
+    # muxer = ['mpegtsmux', {'alignment': 7}]
+    muxer = ['flvmux', {'streamable': True}]
+    # payloader = ['rtpmp2tpay', {}]
+    payloader = None
+    # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}, 'rtpmp4apay', {}]
+    v_enc = ['x264enc', {}, 'h264parse', {}, 'rtph264pay', {}]
+
+    a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
+    # a_enc = ['lamemp3enc', {}, 'mpegaudioparse', {}]
+    num_streams = 2
+
+    audio_channels_from_sdi = 8
     audio_channels_to_madi = 8
+    if development: audio_channels_to_madi = 1
     audio_channels_to_stream = 1
-    
+    default_audio_to_stream = 1
+
     streams = [None]
-    sdp_info =[None]
+    sdp_info = [None]
     stream = ''
 
     mqtt_server = '10.82.209.45'
+    if development == True: mqtt_server = 'localhost'
     mqtt_port = 1883
-    mqtt_topic = ['gvg-grp', 'vserv1', 'video']
+    mqtt_topic = ['gvg-grp', maschinename]
+    mqtt_topic_for_remote = ['video', '#']
+    mqtt_topic_for_status = ['status']
     mqtt_user = Secrets.mqtt_user
     mqtt_pass = Secrets.mqtt_pass
+    mqtt_status_interval = 5
+    mqtt_elements = []
+
+    ### Ui
+    ui_elements = [None]
