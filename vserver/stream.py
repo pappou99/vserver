@@ -24,7 +24,7 @@ from vserver.jackconnect import Jacking
 class Stream:
 
     def __init__(self, streamnumber):
-        debug_level = Gst.DebugLevel.INFO  # Possible levels: None ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+        debug_level = Gst.DebugLevel.FIXME  # Possible levels: None ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
         Settings.streams[streamnumber] = self
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
@@ -153,9 +153,9 @@ class Stream:
             ['udpsink', 'v_netsink', {'host': Settings.stream_ip, 'port': self.v_port}]  # SETTINGS FOR RTP
         ]
 
+        self.malm(videopipe)
         self.malm(audiosource)
         self.malm(jacksink)
-        self.malm(videopipe)
         self.malm(rtpbin)
         self.malm(v_netsink)
         self.malm(a_netsink)
