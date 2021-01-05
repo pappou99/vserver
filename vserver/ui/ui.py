@@ -59,7 +59,10 @@ class Ui(threading.Thread, Gtk.Window):
         for streamnumber in range(1, Settings.num_streams + 1):
             Settings.ui_elements.append(dict())
             gui = Settings.ui_elements[streamnumber]
-            statusname = Gst.Element.state_get_name(Settings.streams[streamnumber].pipe_status)
+            try:
+                statusname = Gst.Element.state_get_name(Settings.streams[streamnumber].pipe_status)
+            except IndexError:
+                statusname = 'Init'
 
             gui['box'] = Gtk.VBox.new(False, 0)
             gui['stream_label'] = Gtk.Label(label="Video %s" % streamnumber)

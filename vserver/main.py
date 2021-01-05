@@ -119,6 +119,11 @@ class Main:
         # self.a_in = my_inputs[1]
         # print("Audio: %s" % Settings.audio_in_name)
 
+        # create gui
+        gui = Settings.ui_elements[0] = ui.Ui()
+        gui.connect("destroy", Gtk.main_quit)
+        gui.show_all()
+
         # enable MQTT-remote support
         mqtt_remote = MqttRemote()
         Settings.mqtt_elements.append(mqtt_remote) # todo wieso?
@@ -139,10 +144,6 @@ class Main:
         if Settings.instant_play:
             stream.start()
 
-        # create gui
-        gui = Settings.ui_elements[0] = ui.Ui()
-        gui.connect("destroy", Gtk.main_quit)
-        gui.show_all()
         Gtk.main()
 
 
