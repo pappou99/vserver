@@ -34,7 +34,7 @@ class Settings:
     benchmark_location = '%s/benchmark' % logfile_location
     dotfile_location = '%s/dot' % logfile_location
     sdp_file_location = './sdp'
-    development = True  # change to true, if you dont have the required hardware (audio- videotestsrc)
+    development = False  # change to true, if you dont have the required hardware (audio- videotestsrc)
     instant_play = True
 
     interactive = True
@@ -67,7 +67,8 @@ class Settings:
 
     a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
     # a_enc = ['lamemp3enc', {}, 'mpegaudioparse', {}]
-    num_streams = 2
+    num_streams = 1
+    if development: num_streams = 2
 
     audio_channels_from_sdi = 8
     audio_channels_to_madi = 8
