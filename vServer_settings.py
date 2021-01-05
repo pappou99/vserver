@@ -35,7 +35,7 @@ class Settings:
     dotfile_location = '%s/dot' % logfile_location
     sdp_file_location = './sdp'
     development = True  # change to true, if you dont have the required hardware (audio- videotestsrc)
-    instant_play = False
+    instant_play = True
 
     interactive = True
     possible_codecs = PossibleInputs.container_list['rtp']

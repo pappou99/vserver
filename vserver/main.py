@@ -142,9 +142,9 @@ class Main:
                 Settings.mqtt_elements.append(mqtt_publisher)
                 mqtt_publisher.start()
 
-        # instantly play video for testing or headless operation without remote
-        if Settings.instant_play:
-            stream.start()
+            # instantly play video for testing or headless operation without remote
+            if Settings.instant_play:
+                Settings.streams[streamnumber].thread.start()
 
         Gtk.main()
 
