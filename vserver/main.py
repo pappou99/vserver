@@ -45,7 +45,7 @@ from vServer_settings import Settings
 from vserver.benchmark import Benchmark
 from vserver.ui import ui
 
-timeout = 1
+timeout = 3
 
 
 def make_directories(directory_list):
@@ -124,10 +124,11 @@ class Main:
         gui.connect("destroy", Gtk.main_quit)
         gui.show_all()
 
-        # enable MQTT-remote support
-        mqtt_remote = MqttRemote()
-        Settings.mqtt_elements.append(mqtt_remote) # todo wieso?
-        mqtt_remote.start()
+        if Settings.mqtt_enabled:
+            # enable MQTT-remote support
+            mqtt_remote = MqttRemote()
+            Settings.mqtt_elements.append(mqtt_remote) # todo wieso?
+            mqtt_remote.start()
 
         # create streams
         print("MAIN: Creating streams\n")
@@ -136,9 +137,10 @@ class Main:
             Settings.streams[streamnumber] = stream = Stream(streamnumber)
             stream.prepare(Settings.video_in_name, Settings.audio_in_name)
 
-            mqtt_publisher = MqttPublisher(streamnumber)
-            Settings.mqtt_elements.append(mqtt_publisher)
-            mqtt_publisher.start()
+            if Settings.mqtt_enabled:
+                mqtt_publisher = MqttPublisher(streamnumber)
+                Settings.mqtt_elements.append(mqtt_publisher)
+                mqtt_publisher.start()
 
         # instantly play video for testing or headless operation without remote
         if Settings.instant_play:

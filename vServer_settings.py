@@ -79,6 +79,7 @@ class Settings:
     sdp_info = [None]
     stream = ''
 
+    mqtt_enabled = False
     mqtt_server = '10.82.209.45'
     if development == True: mqtt_server = 'localhost'
     mqtt_port = 1883
