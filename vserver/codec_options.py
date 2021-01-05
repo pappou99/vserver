@@ -72,7 +72,8 @@ class PossibleInputs:
         ],
         'video/mpeg_v2': [
             ['avenc_mpeg2video', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}],
-            ['mpeg2enc', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}]
+            ['mpeg2enc', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}],
+            ['vaapimpeg2enc', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}]
         ],
         'video/mpeg_v4': [
             ['avenc_mpeg4', {}, 'mpeg4videoparse', {}, 'rtpmp4vpay', {}]
@@ -91,7 +92,7 @@ class PossibleInputs:
             # ['avenc_h264_omx', {}, 'h264parse', {}, 'rtph264pay', {}],
             # ['nvh264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
             ['openh264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
-            # ['vaapih264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
+            ['vaapih264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
             ['x264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
             # ['mfh264enc', {}, 'h264parse', {}, 'rtph264pay', {}]
         ],
