@@ -517,9 +517,10 @@ class Stream:
         caps = pad.query_caps(None)
         print('RtpBin Caps: %s' % caps)
         if caps:
+            caps_str = caps.to_string()
+            print('Caps are available\n%s' % caps_str)
             # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps)) # old
-            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))',
-                                    str(caps))
+            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))', caps_str)
 
             for (_, param, value, value2, value3, value4) in parameters:
                 sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
