@@ -73,7 +73,8 @@ class Main:
         return
 
     def __init__(self):
-        Settings.hostname = socket.gethostname()
+        if Settings.hostname == '':
+            Settings.hostname = socket.gethostname()
         folders_to_check = [Settings.logfile_location, Settings.dotfile_location, Settings.sdp_file_location]
 
         if Settings.logfile == '':

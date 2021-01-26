@@ -41,7 +41,7 @@ class Settings:
     possible_codecs = PossibleInputs.container_list['rtp']
 
     maschinename = 'videoserver1'
-    hostname = ''  # will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
+    hostname = ''  # will be overwritten by socket.gethostname
 
     stream_ip = '239.230.225.255'# multicast Address
     # stream_ip = '10.82.109.41'  # rtmp server address
