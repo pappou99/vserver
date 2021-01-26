@@ -171,7 +171,7 @@ class Stream:
         self.write_dotfile(self.streamnumber, 'malm')
 
         self.thread = Thread(target=self.play, name=self.devicename)
-        self.sdp = Thread(target=self.createsdp, args=[self.sdp_params], name='SDP-generator')
+        self.sdp = Thread(target=self.createsdp, args=['rtpbin'], name='SDP-generator')
 
         self.pipeline.set_state(Gst.State.READY)
 
@@ -530,8 +530,8 @@ class Stream:
                 sdp_params['port'] = self.v_port
             return sdp_params
 
-    def createsdp(self, sdp_list):
-        source = self.pipeline.get_by_name('rtpbin')
+    def createsdp(self, element):
+        source = self.pipeline.get_by_name(element)
         for pad in source.pads:
             if pad.direction == Gst.PadDirection.SRC:
                 self.sdp_params.append(self.note_caps(pad))
