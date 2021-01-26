@@ -226,7 +226,6 @@ class Stream:
         follower = self.pipeline.get_by_name('d_follower')
         deint.unlink(follower)
 
-
     def stop(self):
         self.pipeline.set_state(Gst.State.READY)
         self.pipe_status = self.get_pipeline_status()
@@ -513,12 +512,23 @@ class Stream:
         n = logfile.write(string)
 
     def note_caps(self, pad):
+        caps_dict = {}
         sdp_params = defaultdict(str)
         caps = pad.query_caps(None)
-        print('RtpBin Caps: %s' % caps)
         if caps:
             caps_str = caps.to_string()
-            print('Caps are available\n%s' % caps_str)
+            caps_str = caps_str.replace('[ ', '')
+            caps_str = caps_str.replace(', 127 ]', '')
+            caps_str = re.sub(r'\(\w+\)', '', caps_str)
+            caps_str = re.sub(r'\{ (\w+), .+ \}', r'\1', caps_str)
+            print(caps_str)
+            caps_list = caps_str.split(',')
+            for item in caps_list[1:]:
+                key, value = item.split('=')
+                caps_dict[key] = value
+                # item_dict = dict(item.split('='))
+                # print(item_dict)
+            print(caps_dict)
             # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps)) # old
             parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))', caps_str)
 
