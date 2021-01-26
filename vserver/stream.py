@@ -544,7 +544,7 @@ class Stream:
         sdp.append('s=GST2SDP')
 
         # add individual streams to SDP
-        for ding in sdp_list:
+        for ding in self.sdp_params:
             sdp.append("m=%s %s RTP/AVP %s" % (ding['media'], ding['port'], ding['payload']))
             sdp.append('c=IN IP4 %s' % Settings.stream_ip)
             sdp.append("a=rtpmap:%s %s/%s" % (ding['payload'], ding['encoding-name'], ding['clock-rate']))
