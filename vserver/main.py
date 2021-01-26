@@ -44,6 +44,7 @@ from vserver.stream import Stream
 from vServer_settings import Settings
 from vserver.benchmark import Benchmark
 from vserver.ui import ui
+from vserver.jack_server_control import JackControl
 
 timeout = 3
 
@@ -88,7 +89,16 @@ class Main:
         # create Benchmark-test-files via nmon
         if Settings.debug: Benchmark()
 
-        os.system('jack_control start')
+        jackserver = JackControl()
+        jack_status, msg = jackserver.jack_control('status')
+        if jack_status == 1:
+            jack_start_status, msg = jackserver.jack_control('start')
+            if jack_start_status == 1:
+                print('ERROR: %s' % msg)
+                print('Maybe an kernel-update was made? Then go and compile your MadiFX-Driver')
+                exit(1)
+        # ret = os.system('jack_control start')
+        # print("Return: %s" % ret)
 
         if Settings.interactive:
             print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
