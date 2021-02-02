@@ -226,7 +226,6 @@ class Stream:
         follower = self.pipeline.get_by_name('d_follower')
         deint.unlink(follower)
 
-
     def stop(self):
         self.pipeline.set_state(Gst.State.READY)
         self.pipe_status = self.get_pipeline_status()
@@ -513,21 +512,41 @@ class Stream:
         n = logfile.write(string)
 
     def note_caps(self, pad):
-        sdp_params = defaultdict(str)
+        sdp_params = {}
         caps = pad.query_caps(None)
-        print('RtpBin Caps: %s' % caps)
         if caps:
+            print('Caps:\n%s' % caps)
             caps_str = caps.to_string()
-            print('Caps are available\n%s' % caps_str)
-            # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps)) # old
-            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))', caps_str)
-
-            for (_, param, value, value2, value3, value4) in parameters:
-                sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
+            caps_str = caps_str.replace('[ ', '')  # remove opening square bracket
+            caps_str = caps_str.replace(', 127 ]', '')  # remove second payload and closing square brackets
+            caps_str = re.sub(r'\(\w+\)', '', caps_str)  # remove  parenthesies with type of value
+            caps_str = re.sub(r'\{ (\w+), .+ \}', r'\1', caps_str)  # remove braces and additional codecs
+            caps_str = caps_str.replace(' ', '')  # remove whitespaces
+            # print(caps_str)
+            caps_list = caps_str.split(',')
+            for item in caps_list[1:]:
+                print(item)
+                key, value = item.split('=')
+                sdp_params[key] = value
+            try:
+                sdp_params['media']
+            except KeyError:
+                if sdp_params['clock-rate'] == '90000':
+                    sdp_params['media'] = 'video'
+                # item_dict = dict(item.split('='))
+                # print(item_dict)
+            # print(caps_dict)
+            # # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps)) # old
+            # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))',
+            #                         caps_str)
+            #
+            # for (_, param, value, value2, value3, value4) in parameters:
+            #     sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
             if 'audio' in sdp_params.values():
                 sdp_params['port'] = self.a_port
             elif 'video' in sdp_params.values():
                 sdp_params['port'] = self.v_port
+            print('NoteCAps: %s' % sdp_params)
             return sdp_params
 
     def createsdp(self, element):
@@ -543,6 +562,7 @@ class Stream:
         sdp.append('t=0 0')
         sdp.append('s=GST2SDP')
 
+        print('SDP: %s' % self.sdp_params)
         # add individual streams to SDP
         for ding in self.sdp_params:
             sdp.append("m=%s %s RTP/AVP %s" % (ding['media'], ding['port'], ding['payload']))
@@ -563,7 +583,11 @@ class Stream:
             print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
         sdp_str = ('\r\n'.join(sdp))
         # save sdp
-        filename = '%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber)
-        with open(filename, 'w') as sdp_file:
+        filename = 'Video%d.sdp' % self.streamnumber
+        file_and_path = '%s/%s' % (Settings.sdp_file_location, filename)
+        pub_file_and_path = '%s/%s' % (Settings.public_folder, filename)
+        with open(file_and_path, 'w') as sdp_file:
             sdp_file.write('\r\n'.join(sdp))
-        print('STREAM: SDP-file written to %s' % filename)
+        print('STREAM: SDP-file written to %s' % file_and_path)
+        os.popen('cp %s %s' % (file_and_path, pub_file_and_path))
+        print('STREAM: SDP-file copied to %s' % pub_file_and_path)

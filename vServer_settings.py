@@ -34,6 +34,8 @@ class Settings:
     benchmark_location = '%s/benchmark' % logfile_location
     dotfile_location = '%s/dot' % logfile_location
     sdp_file_location = './sdp'
+    public_folder = '~/Öffentlich'
+
     development = False  # change to true, if you dont have the required hardware (audio- videotestsrc)
     instant_play = True
 
