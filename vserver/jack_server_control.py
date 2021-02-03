@@ -41,11 +41,11 @@ class JackControl:
 # Test.
 if __name__ == "__main__":
 
-    exit_code, msg = jack_control("help")  # Get help message.
+    exit_code, msg = JackControl.jack_control("help")  # Get help message.
     print(msg)  # Print the help message (redirected from stdout).
 
     # Toggle start/stop state.
-    status_code, msg = jack_control("status")
+    status_code, msg = JackControl.jack_control("status")
     if status_code == 0:
         jack_control("stop")
     else:
