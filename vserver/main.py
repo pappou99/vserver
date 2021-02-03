@@ -45,6 +45,7 @@ from vServer_settings import Settings
 from vserver.benchmark import Benchmark
 from vserver.ui import ui
 from vserver.jack_server_control import JackControl
+import vserver.check_sounddevice
 
 timeout = 3
 
@@ -95,8 +96,12 @@ class Main:
             jack_start_status, msg = jackserver.jack_control('start')
             if jack_start_status == 1:
                 print('ERROR: %s' % msg)
-                print('Maybe an kernel-update was made? Then go and compile your MadiFX-Driver')
+                print('Maybe an kernel-update was made? Then go and compile your MadiFX-Driver\n'
+                      'Another hint would be, that jackdbus started with the wrong device (normally hw:0) '
+                      'In our case its Device number %s') % vserver.check_sounddevice.check_madi_card_device()
                 exit(1)
+            elif jack_start_status == 0:
+                print('MAIN: Jack-Server successfully started')
         # ret = os.system('jack_control start')
         # print("Return: %s" % ret)
 
