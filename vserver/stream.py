@@ -515,10 +515,13 @@ class Stream:
         sdp_params = {}
         caps = pad.query_caps(None)
         if caps:
-            print('Caps:\n%s' % caps)
+            # print('Caps:\n%s' % caps)
             caps_str = caps.to_string()
-            caps_str = caps_str.replace('[ ', '')  # remove opening square bracket
-            caps_str = caps_str.replace(', 127 ]', '')  # remove second payload and closing square brackets
+            print('Caps: %s' % caps_str)
+            # caps_str = caps_str.replace('[ ', '')  # remove opening square bracket
+            caps_str = re.sub(r'\[ ', '', caps_str) # remove opening square bracket
+            # caps_str = caps_str.replace(', 127 ]', '')  # remove second payload and closing square brackets
+            caps_str = re.sub(r', \d+ \]', '', caps_str)  # remove second payload and closing square brackets
             caps_str = re.sub(r'\(\w+\)', '', caps_str)  # remove  parenthesies with type of value
             caps_str = re.sub(r'\{ (\w+), .+ \}', r'\1', caps_str)  # remove braces and additional codecs
             caps_str = caps_str.replace(' ', '')  # remove whitespaces
