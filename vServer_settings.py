@@ -57,19 +57,19 @@ class Settings:
     audio_in_name = 'Decklink-Card'  # must be exactly written like in codec_options.py
     # video_in_name = 'Webcam' ## must be exactly written like in vServer.choice.py class PossibleInputs
     if development: audio_in_name = 'Test sound generator'  # must be exactly written like in codec_options.py
-    videowidth = '1280'
-    videoheight = '720'
+    videowidth = '1280'  # 1280 1920
+    videoheight = '720'  # 720 1080
 
     # muxer = ['mpegtsmux', {'alignment': 7}]
     muxer = ['flvmux', {'streamable': True}]
     # payloader = ['rtpmp2tpay', {}]
     payloader = None
     # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}, 'rtpmp4apay', {}]
-    v_enc = ['x264enc', {}, 'h264parse', {}, 'rtph264pay', {}]
+    v_enc = ['x264enc', {'speed-preset': 1}, 'h264parse', {}, 'rtph264pay', {}]
 
-    a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
-    # a_enc = ['lamemp3enc', {}, 'mpegaudioparse', {}]
-    num_streams = 1
+    # a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
+    a_enc = ['avenc_aac', {}, 'aacparse', {}, 'rtpmp4apay', {}]
+    num_streams = 4
     if development: num_streams = 2
 
     audio_channels_from_sdi = 8
