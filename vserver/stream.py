@@ -536,6 +536,8 @@ class Stream:
             except KeyError:
                 if sdp_params['clock-rate'] == '90000':
                     sdp_params['media'] = 'video'
+            if sdp_params['media'] == 'audio':
+                sdp_params['clock-rate'] = '48000'
                 # item_dict = dict(item.split('='))
                 # print(item_dict)
             # print(caps_dict)
