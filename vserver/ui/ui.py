@@ -104,6 +104,8 @@ class Ui(threading.Thread, Gtk.Window):
 
     def on_close_clicked(self, button):
         print("Closing application")
+        for streamnumber in range(1, len(Settings.streams)):
+            self.remote.stop(streamnumber)
         Gtk.main_quit()
 
     def start_stream_click(self, switch, gparam, streamnumber):

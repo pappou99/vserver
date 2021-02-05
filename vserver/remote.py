@@ -19,7 +19,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-
+import time
 from vServer_settings import Settings
 from vserver.stream import Stream
 
@@ -46,15 +46,16 @@ class Remote:
     def stop(self, streamnumber):
         me = Settings.streams[streamnumber]
         if not me.active:
-            print('REMOTE: Stream %s already stopped; nothing to do' % streamnumber)
+            # print('REMOTE: Stream %s already stopped; nothing to do' % streamnumber)
             return
         if me is not None:
-            print('REMOTE: Stopping video %s\n' % streamnumber)
+            print('REMOTE: Stopping video %s' % streamnumber)
             me.stop()
-            me.thread.join()
-            for i in Settings.streams:
-                print(i)
-                return
+            # time.sleep(1)
+            # me.thread.join()
+            # for i in Settings.streams:
+            #     print(i)
+            #     return
         else:
             print('Video was already stopped. Nothing to do!')
 
