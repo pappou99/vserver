@@ -137,6 +137,7 @@ class Stream:
             ['capsfilter', None,
              {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [v_enc[0], 'v_enc', v_enc[1]],
+            ['capsfilter', None, {'caps': 'video/x-h264, profile=main'}], # Settings for video if h264
             # [v_enc[2], 'v_parser', v_enc[3] ],  # SETTINGS FOR RTP
             [v_enc[4], 'v_payloader', v_enc[5]],  # SETTINGS FOR RTP
         ]
