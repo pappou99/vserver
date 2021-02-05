@@ -47,7 +47,7 @@ from vserver.ui import ui
 from vserver.jack_server_control import JackControl
 import vserver.check_sounddevice
 
-timeout = 3
+timeout = 1
 
 
 def make_directories(directory_list):
