@@ -69,7 +69,7 @@ class Settings:
 
     # a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
     a_enc = ['avenc_aac', {}, 'aacparse', {}, 'rtpmp4apay', {}]
-    num_streams = 4
+    num_streams = 8
     if development: num_streams = 2
 
     audio_channels_from_sdi = 8
