@@ -41,7 +41,9 @@ class Benchmark:
         cwd = os.getcwd()
 
         path = Settings.benchmark_location
-        filename = '%s_%s_%sStreams_%s_%s.nmon' % (day, now, Settings.num_streams, v_enc_name, a_enc_name)
+
+        filename = '%s_%s_%sStreams_%s_%s_at_%s_%s.nmon' % (day, now, Settings.num_streams, v_enc_name, a_enc_name,
+                                                            Settings.videowidth, Settings.videoheight)
         logfile = '%s/%s' % (path, filename)
         # mode = 'a' if os.path.exists(logfile) else 'w'
         # with open(logfile, mode) as f:

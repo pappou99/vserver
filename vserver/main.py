@@ -44,6 +44,8 @@ from vserver.stream import Stream
 from vServer_settings import Settings
 from vserver.benchmark import Benchmark
 from vserver.ui import ui
+from vserver.jack_server_control import JackControl
+import vserver.check_sounddevice
 
 timeout = 1
 
@@ -73,7 +75,8 @@ class Main:
         return
 
     def __init__(self):
-        Settings.hostname = socket.gethostname()
+        if Settings.hostname == '':
+            Settings.hostname = socket.gethostname()
         folders_to_check = [Settings.logfile_location, Settings.dotfile_location, Settings.sdp_file_location]
 
         if Settings.logfile == '':
@@ -87,7 +90,20 @@ class Main:
         # create Benchmark-test-files via nmon
         if Settings.debug: Benchmark()
 
-        os.system('jack_control start')
+        jackserver = JackControl()
+        jack_status, msg = jackserver.jack_control('status')
+        if jack_status == 1:
+            jack_start_status, msg = jackserver.jack_control('start')
+            if jack_start_status == 1:
+                print('ERROR: %s' % msg)
+                print('Maybe an kernel-update was made? Then go and compile your MadiFX-Driver\n'
+                      'Another hint would be, that jackdbus started with the wrong device (normally hw:0) '
+                      'In our case its Device number %s') % vserver.check_sounddevice.check_madi_card_device()
+                exit(1)
+            elif jack_start_status == 0:
+                print('MAIN: Jack-Server successfully started')
+        # ret = os.system('jack_control start')
+        # print("Return: %s" % ret)
 
         if Settings.interactive:
             print('To use interactive mode: press any key   (you have %ss to type)' % timeout)
@@ -119,10 +135,16 @@ class Main:
         # self.a_in = my_inputs[1]
         # print("Audio: %s" % Settings.audio_in_name)
 
-        # enable MQTT-remote support
-        mqtt_remote = MqttRemote()
-        Settings.mqtt_elements.append(mqtt_remote) # todo wieso?
-        mqtt_remote.start()
+        # create gui
+        gui = Settings.ui_elements[0] = ui.Ui()
+        gui.connect("destroy", Gtk.main_quit)
+        gui.show_all()
+
+        if Settings.mqtt_enabled:
+            # enable MQTT-remote support
+            mqtt_remote = MqttRemote()
+            Settings.mqtt_elements.append(mqtt_remote)  # todo wieso?
+            mqtt_remote.start()
 
         # create streams
         print("MAIN: Creating streams\n")
@@ -131,18 +153,15 @@ class Main:
             Settings.streams[streamnumber] = stream = Stream(streamnumber)
             stream.prepare(Settings.video_in_name, Settings.audio_in_name)
 
-            mqtt_publisher = MqttPublisher(streamnumber)
-            Settings.mqtt_elements.append(mqtt_publisher)
-            mqtt_publisher.start()
+            if Settings.mqtt_enabled:
+                mqtt_publisher = MqttPublisher(streamnumber)
+                Settings.mqtt_elements.append(mqtt_publisher)
+                mqtt_publisher.start()
 
-        # instantly play video for testing or headless operation without remote
-        if Settings.instant_play:
-            stream.start()
+            # instantly play video for testing or headless operation without remote
+            if Settings.instant_play:
+                Settings.streams[streamnumber].thread.start()
 
-        # create gui
-        gui = Settings.ui_elements[0] = ui.Ui()
-        gui.connect("destroy", Gtk.main_quit)
-        gui.show_all()
         Gtk.main()
 
 

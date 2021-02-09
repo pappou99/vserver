@@ -73,12 +73,12 @@ class Jacking:
             last_playbackport = ((self.video_id + 1) * Settings.audio_channels_to_madi) - 1
             # we have to add a +1 because the slice does not include the last element
             real_playback = playback[first_playbackport:last_playbackport + 1]
-            print('JACK: Real playback: %s' % real_playback)
+            # print('JACK: Real playback: %s' % real_playback)
             if not real_playback:
                 raise RuntimeError("JACK: No physical playback ports")
             for src, dest in zip(capture, real_playback):
                 self.client.connect(src, dest)
-                print('JACK: Linked %s \t to \t %s' % (src, dest))
+                # print('JACK: Linked %s \t to \t %s' % (src, dest))
                 # if jack is to slow, uncomment this:
                 # time.sleep(0.5)
 

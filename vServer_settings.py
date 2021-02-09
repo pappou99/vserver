@@ -28,22 +28,24 @@ class Settings:
 
     logfile_location = './logs'  # directory without following slash
     logfile = ''  # if this is empty a name will be generated (format YYYYMMDD HHMM.log)
-    write_logfile = False
+    write_logfile = True
 
     # Advanced logging like benchmark, dot-file etc...
     benchmark_location = '%s/benchmark' % logfile_location
     dotfile_location = '%s/dot' % logfile_location
     sdp_file_location = './sdp'
-    development = True  # change to true, if you dont have the required hardware (audio- videotestsrc)
-    instant_play = False
+    public_folder = '~/Öffentlich'
+
+    development = False  # change to true, if you dont have the required hardware (audio- videotestsrc)
+    instant_play = True
 
     interactive = True
     possible_codecs = PossibleInputs.container_list['rtp']
 
     maschinename = 'videoserver1'
-    hostname = ''  # will be overwritten by socket.gethostname TODO ändern in: nur überschreiben, wenn leer
+    hostname = ''  # will be overwritten by socket.gethostname
 
-    stream_ip = '239.230.225.255'# multicast Address
+    stream_ip = '239.230.225.255'  # multicast Address
     # stream_ip = '10.82.109.41'  # rtmp server address
     # if development == True: stream_ip = '10.19.77.42'  # rtmp server address
     startport = 5000
@@ -55,19 +57,20 @@ class Settings:
     audio_in_name = 'Decklink-Card'  # must be exactly written like in codec_options.py
     # video_in_name = 'Webcam' ## must be exactly written like in vServer.choice.py class PossibleInputs
     if development: audio_in_name = 'Test sound generator'  # must be exactly written like in codec_options.py
-    videowidth = '1280'
-    videoheight = '720'
+    videowidth = '1280'  # 1280 1920
+    videoheight = '720'  # 720 1080
 
     # muxer = ['mpegtsmux', {'alignment': 7}]
     muxer = ['flvmux', {'streamable': True}]
     # payloader = ['rtpmp2tpay', {}]
     payloader = None
     # v_enc = ['avenc_mpeg4', {}, 'mpeg4videoparse', {}, 'rtpmp4apay', {}]
-    v_enc = ['x264enc', {}, 'h264parse', {}, 'rtph264pay', {}]
+    v_enc = ['x264enc', {'speed-preset': 1}, 'h264parse', {}, 'rtph264pay', {}]
 
-    a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
-    # a_enc = ['lamemp3enc', {}, 'mpegaudioparse', {}]
-    num_streams = 2
+    # a_enc = ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
+    a_enc = ['avenc_aac', {}, 'aacparse', {}, 'rtpmp4apay', {}]
+    num_streams = 8
+    if development: num_streams = 2
 
     audio_channels_from_sdi = 8
     audio_channels_to_madi = 8
@@ -79,6 +82,7 @@ class Settings:
     sdp_info = [None]
     stream = ''
 
+    mqtt_enabled = False
     mqtt_server = '10.82.209.45'
     if development == True: mqtt_server = 'localhost'
     mqtt_port = 1883

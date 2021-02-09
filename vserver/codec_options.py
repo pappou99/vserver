@@ -72,10 +72,11 @@ class PossibleInputs:
         ],
         'video/mpeg_v2': [
             ['avenc_mpeg2video', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}],
-            ['mpeg2enc', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}]
+            ['mpeg2enc', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}],
+            ['vaapimpeg2enc', {}, 'mpegvideoparse', {}, 'rtpmpvpay', {}]
         ],
         'video/mpeg_v4': [
-            ['avenc_mpeg4', {}, 'mpeg4videoparse', {}, 'rtpmp4vpay', {}]
+            ['avenc_mpeg4', {'interlaced': 'true'}, '', {}, 'rtpmp4vpay', {}]
         ],
         # 'video/x-dirac' :   [['']],
         # 'video/x-h261': [
@@ -91,22 +92,22 @@ class PossibleInputs:
             # ['avenc_h264_omx', {}, 'h264parse', {}, 'rtph264pay', {}],
             # ['nvh264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
             ['openh264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
-            # ['vaapih264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
-            ['x264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
+            ['vaapih264enc', {}, 'h264parse', {}, 'rtph264pay', {}],
+            ['x264enc', {'speed-preset': 1}, 'h264parse', {}, 'rtph264pay', {}],
             # ['mfh264enc', {}, 'h264parse', {}, 'rtph264pay', {}]
         ],
-        'video/x-h265': [
+        # 'video/x-h265': [
             # ['nvh265enc', {}, 'h265parse', {}, 'rtph265pay', {}],
             # ['vaapih265enc', {}, 'h265parse', {}, 'rtph265pay', {}],
-            ['x265enc', {}, 'h265parse', {}, 'rtph265pay', {}]#,
+            # ['x265enc', {}, 'h265parse', {}, 'rtph265pay', {}]#,
             # ['mfh265enc', {}, 'h265parse', {}, 'rtph265pay', {}]
-        ],
+        # ],
         # 'video/x-dv': [
         #     ['avenc_dvvideo', {}, '', {}]
         # ],
-        'video/x-theora' : [
-          ['theoraenc', {}, 'theoraparse', {}, 'rtptheorapay', {}]
-        ],
+        # 'video/x-theora' : [
+        #   ['theoraenc', {}, 'theoraparse', {}, 'rtptheorapay', {}]
+        # ],
         'video/x-vp8' : [
             ['vp8enc', {}, '', {}, 'rtpvp8pay', {}]
         ],
@@ -120,14 +121,22 @@ class PossibleInputs:
             ['lamemp3enc', {}, 'mpegaudioparse', {}, 'rtpmpapay', {}]
         ],
         # 'audio/mpeg_v2' : [['faac', {}]],
-        # 'audio/mpeg_v4' : [
-        # ['faac', {}, '', {}, '', {}]
-        # ],
+        'audio/mpeg_v4': [
+            ['avenc_aac', {}, 'aacparse', {}, 'rtpmp4apay', {}],
+            ['voaacenc', {}, 'aacparse', {}, 'rtpmp4apay', {}],
+            ['omxaacenc', {}, 'aacparse', {}, 'rtpmp4apay', {}]
+        ],
         # 'audio/x-lpcm' : [['', {}]],
         # 'audio/x-ac3' : [['', {}]],
         # 'audio/x-dts' : [['', {}]],
         'audio/x-opus': [
             ['avenc_opus', {}, 'opusparse', {}, 'rtpopuspay', {}],
             ['opusenc', {}, 'opusparse', {}, 'rtpopuspay', {}]
+        ],
+        'audio/x-adpcm': [
+            ['adpcmenc', {}, '', {}, '', {}]
         ]
+        # '': [
+        #     ['', {}, '', {}, '', {}]
+        # ]
     }

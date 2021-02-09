@@ -24,6 +24,7 @@ from vserver.jackconnect import Jacking
 class Stream:
 
     def __init__(self, streamnumber):
+        debug_level = Gst.DebugLevel.FIXME  # Possible levels: None ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
         Settings.streams[streamnumber] = self
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
@@ -37,8 +38,7 @@ class Stream:
             Gst.debug_set_active(True)
             level = Gst.debug_get_default_threshold()
             if level < Gst.DebugLevel.ERROR:
-                Gst.debug_set_default_threshold(
-                    Gst.DebugLevel.FIXME)  # none ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+                Gst.debug_set_default_threshold(debug_level)
 
         self.port = Settings.startport + self.stream_id
         self.v_port = Settings.startport + self.stream_id * 8
@@ -137,6 +137,7 @@ class Stream:
             ['capsfilter', None,
              {'caps': 'video/x-raw, width=%s, height=%s' % (Settings.videowidth, Settings.videoheight)}],
             [v_enc[0], 'v_enc', v_enc[1]],
+            ['capsfilter', None, {'caps': 'video/x-h264, profile=main'}], # Settings for video if h264
             # [v_enc[2], 'v_parser', v_enc[3] ],  # SETTINGS FOR RTP
             [v_enc[4], 'v_payloader', v_enc[5]],  # SETTINGS FOR RTP
         ]
@@ -153,9 +154,9 @@ class Stream:
             ['udpsink', 'v_netsink', {'host': Settings.stream_ip, 'port': self.v_port}]  # SETTINGS FOR RTP
         ]
 
+        self.malm(videopipe)
         self.malm(audiosource)
         self.malm(jacksink)
-        self.malm(videopipe)
         self.malm(rtpbin)
         self.malm(v_netsink)
         self.malm(a_netsink)
@@ -171,7 +172,7 @@ class Stream:
         self.write_dotfile(self.streamnumber, 'malm')
 
         self.thread = Thread(target=self.play, name=self.devicename)
-        self.sdp = Thread(target=self.createsdp, args=[self.sdp_params], name='SDP-generator')
+        self.sdp = Thread(target=self.createsdp, args=['rtpbin'], name='SDP-generator')
 
         self.pipeline.set_state(Gst.State.READY)
 
@@ -225,7 +226,6 @@ class Stream:
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
         deint.unlink(follower)
-
 
     def stop(self):
         self.pipeline.set_state(Gst.State.READY)
@@ -497,8 +497,11 @@ class Stream:
 
     def on_debug(self, category, level, dfile, dfctn, dline, source, message, user_data):
         if source:
+            sourcename = ''
             if 'Gst.Pad' in str(source):
-                sourcename = 'Pad of %s' % source.get_parent().name
+                # parent = source.get_parent() # causes a crash if log level > INFO
+                # sourcename = 'Pad of %s' % source.get_parent().name
+                pass
             else:
                 sourcename = source.name
             string = '%s\t%s\t%s\t%s\n' % (self.devicename, Gst.DebugLevel.get_name(level), sourcename, message.get())
@@ -510,24 +513,50 @@ class Stream:
         n = logfile.write(string)
 
     def note_caps(self, pad):
-        sdp_params = defaultdict(str)
+        sdp_params = {}
         caps = pad.query_caps(None)
-        print('RtpBin Caps: %s' % caps)
         if caps:
-            # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps)) # old
-            parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))',
-                                    str(caps))
-
-            for (_, param, value, value2, value3, value4) in parameters:
-                sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
+            # print('Caps:\n%s' % caps)
+            caps_str = caps.to_string()
+            print('Caps: %s' % caps_str)
+            # caps_str = caps_str.replace('[ ', '')  # remove opening square bracket
+            caps_str = re.sub(r'\[ ', '', caps_str) # remove opening square bracket
+            # caps_str = caps_str.replace(', 127 ]', '')  # remove second payload and closing square brackets
+            caps_str = re.sub(r', \d+ \]', '', caps_str)  # remove second payload and closing square brackets
+            caps_str = re.sub(r'\(\w+\)', '', caps_str)  # remove  parenthesies with type of value
+            caps_str = re.sub(r'\{ (\w+), .+ \}', r'\1', caps_str)  # remove braces and additional codecs
+            caps_str = caps_str.replace(' ', '')  # remove whitespaces
+            # print(caps_str)
+            caps_list = caps_str.split(',')
+            for item in caps_list[1:]:
+                print(item)
+                key, value = item.split('=')
+                sdp_params[key] = value
+            try:
+                sdp_params['media']
+            except KeyError:
+                if sdp_params['clock-rate'] == '90000':
+                    sdp_params['media'] = 'video'
+            if sdp_params['media'] == 'audio':
+                sdp_params['clock-rate'] = '48000'
+                # item_dict = dict(item.split('='))
+                # print(item_dict)
+            # print(caps_dict)
+            # # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")))', str(caps)) # old
+            # parameters = re.findall(r'(([\w-]+)=(?:\(\w+\))?(?:(\w+)|(?:"([^"]+)")|(?:\[ (\w+))|(?:{ (\w+))))',
+            #                         caps_str)
+            #
+            # for (_, param, value, value2, value3, value4) in parameters:
+            #     sdp_params[param] = value if value else value2 if value2 else value3 if value3 else value4
             if 'audio' in sdp_params.values():
                 sdp_params['port'] = self.a_port
             elif 'video' in sdp_params.values():
                 sdp_params['port'] = self.v_port
+            print('NoteCAps: %s' % sdp_params)
             return sdp_params
 
-    def createsdp(self, sdp_list):
-        source = self.pipeline.get_by_name('rtpbin')
+    def createsdp(self, element):
+        source = self.pipeline.get_by_name(element)
         for pad in source.pads:
             if pad.direction == Gst.PadDirection.SRC:
                 self.sdp_params.append(self.note_caps(pad))
@@ -539,8 +568,9 @@ class Stream:
         sdp.append('t=0 0')
         sdp.append('s=GST2SDP')
 
+        print('SDP: %s' % self.sdp_params)
         # add individual streams to SDP
-        for ding in sdp_list:
+        for ding in self.sdp_params:
             sdp.append("m=%s %s RTP/AVP %s" % (ding['media'], ding['port'], ding['payload']))
             sdp.append('c=IN IP4 %s' % Settings.stream_ip)
             sdp.append("a=rtpmap:%s %s/%s" % (ding['payload'], ding['encoding-name'], ding['clock-rate']))
@@ -559,7 +589,11 @@ class Stream:
             print('Stream %s SDP-Parameter: %s' % (self.streamnumber, sdp))
         sdp_str = ('\r\n'.join(sdp))
         # save sdp
-        filename = '%s/Video%d.sdp' % (Settings.sdp_file_location, self.streamnumber)
-        with open(filename, 'w') as sdp_file:
+        filename = 'Video%d.sdp' % self.streamnumber
+        file_and_path = '%s/%s' % (Settings.sdp_file_location, filename)
+        pub_file_and_path = '%s/%s' % (Settings.public_folder, filename)
+        with open(file_and_path, 'w') as sdp_file:
             sdp_file.write('\r\n'.join(sdp))
-        print('STREAM: SDP-file written to %s' % filename)
+        print('STREAM: SDP-file written to %s' % file_and_path)
+        os.popen('cp %s %s' % (file_and_path, pub_file_and_path))
+        print('STREAM: SDP-file copied to %s' % pub_file_and_path)
