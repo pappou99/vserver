@@ -24,7 +24,7 @@ from vserver.jackconnect import Jacking
 class Stream:
 
     def __init__(self, streamnumber):
-        debug_level = Gst.DebugLevel.FIXME  # Possible levels: None ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
+        debug_level = Gst.DebugLevel.ERROR  # Possible levels: None ERROR WARNING FIXME INFO DEBUG LOG TRACE MEMDUMP
         Settings.streams[streamnumber] = self
         self.streamnumber = streamnumber
         self.stream_id = streamnumber - 1
@@ -44,7 +44,7 @@ class Stream:
         self.v_port = Settings.startport + self.stream_id * 8
         self.a_port = self.v_port + 2
         self.location = 'rtmp://%s:1935/live/%s' % (Settings.stream_ip, self.streamnumber)  # RTP Setting
-        self.audio_to_stream = Settings.default_audio_to_stream
+        self.create_audio_to_stream_list(Settings.default_audio_to_stream)
         self.audio_counter = 0
         self.pipe_status = Gst.State.NULL
         self.pipe_status_str = Gst.Element.state_get_name(self.pipe_status)
@@ -57,6 +57,14 @@ class Stream:
         #     "uri" : "http://ftp.halifax.rwth-aachen.de/blender/demo/movies/Sintel.2010.1080p.mkv"
         #     }]
         # ])
+
+    def create_audio_to_stream_list(self, startaudio):
+        self.audio_to_stream = None
+        self.audio_to_stream = []
+        for audio_no in range(0, Settings.audio_channels_to_stream):
+            channel = startaudio + audio_no
+            print('Create %s: %s' % (audio_no, channel))
+            self.audio_to_stream.append(channel)
 
     def prepare(self, video_in_name, audio_in_name):
         GObject.threads_init()
@@ -101,12 +109,15 @@ class Stream:
             ['capsfilter', None, {'caps': 'audio/x-raw,channels=%s,rate=48000' % Settings.audio_channels_from_sdi}],
             ['tee', 'audio', {}],
             ['deinterleave', 'deinterleaver', {}],
-            ['queue', 'd_follower', {}],
-            ['capsfilter', None, {
+            # ['queue', 'd_follower', {}],
+            # ['capsfilter', 'caps_b4_intl', {
+            #     'caps': 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s'
+            #             % Settings.audio_channels_to_stream}],
+            # ['queue', 'd_follower', {}],
+            ['interleave', 'd_follower', {'channel-positions-from-input': True}],
+            ['capsfilter', 'caps_b4_intl', {
                 'caps': 'audio/x-raw,layout=(string)interleaved,channel-mask=(bitmask)0x0,channels=%s'
                         % Settings.audio_channels_to_stream}],
-            # ['queue', 'd_follower', {}],
-            ['interleave', None, {'channel-positions-from-input': True}],
             ['audioresample', None, {}],
             ['audioconvert', None, {}],
             ['audiorate', None, {}],
@@ -174,6 +185,7 @@ class Stream:
         self.thread = Thread(target=self.play, name=self.devicename)
         self.sdp = Thread(target=self.createsdp, args=['rtpbin'], name='SDP-generator')
 
+        print('Setting Pipeline %s to READY' % self.streamnumber)
         self.pipeline.set_state(Gst.State.READY)
 
     def create_and_link_gstbin_sink_pads(self, source, sink):
@@ -188,6 +200,7 @@ class Stream:
     def play(self):
         try:
             # start playing
+            print('Setting Pipeline %s to PAUSED' % self.streamnumber)
             ret = self.pipeline.set_state(Gst.State.PAUSED)
             if ret == Gst.StateChangeReturn.FAILURE:
                 print("ERROR: Unable to set the pipeline to the pause state. Is Jack running?")
@@ -197,6 +210,7 @@ class Stream:
 
             self.write_dotfile(self.streamnumber, 'pause')
 
+            print('Setting Pipeline %s to PLAYING' % self.streamnumber)
             ret = self.pipeline.set_state(Gst.State.PLAYING)
             if ret == Gst.StateChangeReturn.FAILURE:
                 print("ERROR: Unable to set the pipeline %s to the playing state" % self.pipeline)
@@ -216,10 +230,21 @@ class Stream:
             self.cleanup()
 
     def connect_stream(self):
+        print("STREAM: Connecting audio channel %s to stream number %s" % (
+            self.audio_to_stream, self.streamnumber))
         deint = self.pipeline.get_by_name('deinterleaver')
         follower = self.pipeline.get_by_name('d_follower')
-        ret = deint.link_pads('src_%s' % (self.audio_to_stream - 1), follower, None)
-        time.sleep(1)
+        print(self.audio_to_stream)
+        for audio in self.audio_to_stream:
+            audio_index = audio - 1
+            print(type(audio_index))
+            print('Audio: %s' % audio_index)
+
+            ret = deint.link_pads('src_%s' % audio_index, follower, None)
+            print(ret)
+            time.sleep(1)
+        print('Setting Pipeline %s to PLAYING' % self.streamnumber)
+        self.pipeline.set_state(Gst.State.PLAYING)
         self.write_dotfile(self.streamnumber, 'play')
 
     def disconnect_stream(self):
@@ -228,6 +253,7 @@ class Stream:
         deint.unlink(follower)
 
     def stop(self):
+        print('Setting Pipeline %s to READY' % self.streamnumber)
         self.pipeline.set_state(Gst.State.READY)
         self.pipe_status = self.get_pipeline_status()
         self.switch_to_active(False)
@@ -238,6 +264,7 @@ class Stream:
     # set the playbin state to NULL and remove the reference to it
     def cleanup(self):
         if self.pipeline:
+            print('Setting Pipeline %s to NULL' % self.streamnumber)
             self.pipeline.set_state(Gst.State.NULL)
             self.pipe_status = self.get_pipeline_status()
             self.bus.remove_signal_watch()
@@ -301,11 +328,14 @@ class Stream:
 
             if prev_name == "deinterleaver":
                 prev.connect("pad-added", self.on_new_deinterleave_pad)
+            elif current_name == 'interleaver':
+                element.connect("no-more-pads", self.create_and_link_intl_pads)
             else:
                 if prev:
                     link_status = prev.link(element)
                     if link_status == False:
-                        print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev_name, current_element))
+                        print('\n########## ERROR! Linking %s to %s failed ##########\n' % (prev.get_name(),
+                                                                                            element.get_name()))
 
             prev = element
             prev_element = current_element
@@ -323,22 +353,32 @@ class Stream:
         return
 
     def on_new_deinterleave_pad(self, element, pad):
-        self.audio_counter += 1
-        if self.audio_counter == self.audio_to_stream:
-            print("STREAM: Connecting audio channel %s to stream number %s" % (self.audio_to_stream, self.streamnumber))
-            deint = pad.get_parent()
-            pipeline = deint.get_parent()
-            follower = pipeline.get_by_name('d_follower')
-            dest_pad = follower.get_static_pad('sink')
-            link_status = pad.link_maybe_ghosting(dest_pad)
-            if not link_status:
-                print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
-            else:
-                ret = self.pipeline.set_state(Gst.State.PLAYING)
-                if ret == Gst.StateChangeReturn.FAILURE:
-                    print("ERROR: Unable to set the pipeline to the playing state")
-                    sys.exit(1)
-            self.pipeline.set_state(Gst.State.PLAYING)
+        pass
+        # self.audio_counter += 1
+        # if self.audio_counter == self.audio_to_stream:
+        #     print("========STREAM: Connecting audio channel %s to stream number %s" % (self.audio_to_stream, self.streamnumber))
+        #     deint = pad.get_parent()
+        #     pipeline = deint.get_parent()
+        #     follower = pipeline.get_by_name('d_follower')
+        #     dest_pad = follower.get_request_pad('sink_%u')
+        #     print('dest pad = %s' % dest_pad)
+        #     link_status = pad.link_maybe_ghosting(dest_pad)
+        #     if not link_status:
+        #         print('\n################# Error linking the two pads ################\n%s\n%s\n' % (deint, follower))
+        #     else:
+        #         print('Setting Pipeline %s to PLAYING' % self.streamnumber)
+        #         ret = self.pipeline.set_state(Gst.State.PLAYING)
+        #         if ret == Gst.StateChangeReturn.FAILURE:
+        #             print("ERROR: Unable to set the pipeline to the playing state")
+        #             sys.exit(1)
+        #     print('Setting Pipeline %s to PLAYING' % self.streamnumber)
+        #     self.pipeline.set_state(Gst.State.PLAYING)
+
+    def create_and_link_intl_pads(self, element):
+        print("+++++++++++STREAM: Interleave ")
+        pad = element.get_static_pad('sink')
+        print(pad)
+
 
     def on_new_jackaudiosink_pad(self, element, pad):
         print('===============================================================')
@@ -358,16 +398,19 @@ class Stream:
 
     # this function is called when the PLAY button is clicked
     def on_play(self, button):
+        print('Setting Pipeline %s to PLAYING' % self.streamnumber)
         self.pipeline.set_state(Gst.State.PLAYING)
         pass
 
     # this function is called when the PAUSE button is clicked
     def on_pause(self, button):
+        print('Setting Pipeline %s to PAUSED' % self.streamnumber)
         self.pipeline.set_state(Gst.State.PAUSED)
         pass
 
     # this function is called when the STOP button is clicked
     def on_stop(self, button):
+        print('Setting Pipeline %s to READY' % self.streamnumber)
         self.pipeline.set_state(Gst.State.READY)
         pass
 
@@ -405,6 +448,7 @@ class Stream:
     # we just set the pipeline to READY (which stops playback)
     def on_eos(self, bus, msg):
         print("End-Of-Stream reached")
+        print('Setting Pipeline %s to READY' % self.streamnumber)
         self.pipeline.set_state(Gst.State.READY)
 
     # this function is called when the pipeline changes states.

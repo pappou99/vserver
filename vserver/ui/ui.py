@@ -71,9 +71,13 @@ class Ui(threading.Thread, Gtk.Window):
 
             gui['select_audio_label'] = Gtk.Label(label='Audiospur')
 
+            if Settings.audio_channels_to_stream == 1:
+                last_channel = Settings.audio_channels_from_sdi
+            elif Settings.audio_channels_to_stream == 2:
+                last_channel = Settings.audio_channels_from_sdi-1
             adjustment = Gtk.Adjustment(value=Settings.default_audio_to_stream,
-                                        lower=1, upper=Settings.audio_channels_from_sdi,
-                                        step_increment=1, page_increment=10)
+                                        lower=1, upper=last_channel,
+                                        step_increment=Settings.audio_channels_to_stream, page_increment=10)
             gui['select_audio'] = Gtk.SpinButton()
             gui['select_audio'].set_adjustment(adjustment)
             # setattr(gui['select_audio'], 'stream', streamnumber)

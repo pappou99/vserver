@@ -61,7 +61,7 @@ class Remote:
 
     def reconnect_audio(self, streamnumber, audio_no):
         me = Settings.streams[streamnumber]
-        me.audio_to_stream = audio_no
+        me.create_audio_to_stream_list(audio_no)
         me.disconnect_stream()
         me.connect_stream()
         pass
